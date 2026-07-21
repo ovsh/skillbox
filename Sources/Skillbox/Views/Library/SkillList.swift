@@ -5,7 +5,8 @@ import SwiftUI
 struct SkillList: View {
     @Environment(SkillLibraryModel.self) private var library
     let selection: SidebarSelection
-    @Binding var selectedSkillID: InstalledSkill.ID?
+    @Binding var selectedSkillIDs: Set<InstalledSkill.ID>
+    @Binding var anchorSkillID: InstalledSkill.ID?
     @FocusState private var searchFocused: Bool
 
     private var visibleSkills: [InstalledSkill] {
@@ -37,9 +38,9 @@ struct SkillList: View {
                         ForEach(visibleSkills) { skill in
                             SkillRow(
                                 skill: skill,
-                                isSelected: selectedSkillID == skill.id
+                                isSelected: selectedSkillIDs.contains(skill.id)
                             ) {
-                                selectedSkillID = skill.id
+                                handleClick(on: skill)
                             }
                         }
                     }
@@ -50,6 +51,29 @@ struct SkillList: View {
             }
         }
         .background(Theme.canvas)
+    }
+
+    /// Finder-style selection: plain click focuses one skill, ⌘-click toggles
+    /// membership, ⇧-click extends from the anchor through the clicked row.
+    private func handleClick(on skill: InstalledSkill) {
+        let modifiers = NSApp.currentEvent?.modifierFlags ?? []
+        if modifiers.contains(.command) {
+            if selectedSkillIDs.contains(skill.id) {
+                selectedSkillIDs.remove(skill.id)
+            } else {
+                selectedSkillIDs.insert(skill.id)
+                anchorSkillID = skill.id
+            }
+        } else if modifiers.contains(.shift),
+                  let anchor = anchorSkillID,
+                  let from = visibleSkills.firstIndex(where: { $0.id == anchor }),
+                  let to = visibleSkills.firstIndex(where: { $0.id == skill.id }) {
+            let range = min(from, to)...max(from, to)
+            selectedSkillIDs.formUnion(visibleSkills[range].map(\.id))
+        } else {
+            selectedSkillIDs = [skill.id]
+            anchorSkillID = skill.id
+        }
     }
 }
 

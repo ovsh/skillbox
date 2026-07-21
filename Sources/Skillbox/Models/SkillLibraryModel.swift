@@ -194,12 +194,68 @@ final class SkillLibraryModel {
     /// Deletes a skill from disk: real folders to the Trash, symlinks remove
     /// the link only, override entry cleared. The UI confirms before calling.
     func deleteSkill(_ skill: InstalledSkill) {
-        guard !mutatingSkillIDs.contains(skill.id) else { return }
-        let deleter = SkillDeleter(settingsStore: settingsStore)
-        performMutation(on: skill) {
-            try deleter.delete(skill)
+        deleteSkills([skill])
+    }
+
+    // MARK: - Bulk operations (multi-select)
+
+    /// Turns many skills on/off in one pass: one settings write per skill
+    /// (the store serializes them), one re-scan at the end.
+    func setActiveBulk(_ skills: [InstalledSkill], _ active: Bool) {
+        let eligible = skills.filter { canToggleClaude($0) }
+        guard !eligible.isEmpty else { return }
+
+        for skill in eligible { optimisticActive[skill.id] = active }
+        mutatingSkillIDs.formUnion(eligible.map(\.id))
+        let store = settingsStore
+        let batch = eligible.map { (id: $0.id, dirName: $0.dirName) }
+
+        Task.detached(priority: .userInitiated) {
+            var failure: String?
+            for item in batch {
+                do {
+                    try store.setOverride(active ? nil : .off, forSkill: item.dirName)
+                } catch {
+                    failure = error.localizedDescription
+                }
+            }
+            await MainActor.run {
+                self.mutatingSkillIDs.subtract(batch.map(\.id))
+                self.lastError = failure
+                self.refresh()
+            }
         }
-        Analytics.track(.skillDeleted(skill: skill.dirName))
+        Analytics.track(.skillToggled(skill: "bulk:\(eligible.count)", enabled: active))
+    }
+
+    /// Deletes many skills: folders to the Trash, links removed link-only,
+    /// override entries cleared. One re-scan at the end.
+    func deleteSkills(_ skills: [InstalledSkill]) {
+        let targets = skills.filter { !mutatingSkillIDs.contains($0.id) }
+        guard !targets.isEmpty else { return }
+
+        mutatingSkillIDs.formUnion(targets.map(\.id))
+        let deleter = SkillDeleter(settingsStore: settingsStore)
+
+        Task.detached(priority: .userInitiated) {
+            var failures: [String] = []
+            for skill in targets {
+                do {
+                    try deleter.delete(skill)
+                } catch {
+                    failures.append(error.localizedDescription)
+                }
+            }
+            let failure = failures.isEmpty ? nil : failures.joined(separator: " · ")
+            await MainActor.run {
+                self.mutatingSkillIDs.subtract(targets.map(\.id))
+                self.lastError = failure
+                self.refresh()
+            }
+        }
+        for skill in targets {
+            Analytics.track(.skillDeleted(skill: skill.dirName))
+        }
     }
 
     /// Per-tool folder shelving for tools without an override mechanism.

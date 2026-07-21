@@ -36,21 +36,45 @@ struct SkillDetail: View {
     }
 
     // MARK: Header — title · slim state pill · ghost actions
+    // ViewThatFits: one line when there's room; title row + controls row when
+    // narrow, so the pill never wraps mid-word.
 
     private var header: some View {
-        HStack(spacing: 10) {
-            Text(skill.name)
-                .font(Theme.title())
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
-
-            Spacer(minLength: 12)
-
-            if library.isClaudeAvailable(skill) {
-                SlimStatePill(skill: skill)
-                    .disabled(!library.canToggleClaude(skill))
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                titleText
+                Spacer(minLength: 12)
+                statePill
+                ghostActions
             }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    titleText
+                    Spacer(minLength: 12)
+                    ghostActions
+                }
+                statePill
+            }
+        }
+    }
 
+    private var titleText: some View {
+        Text(skill.name)
+            .font(Theme.title())
+            .foregroundStyle(Theme.ink)
+            .lineLimit(1)
+    }
+
+    @ViewBuilder
+    private var statePill: some View {
+        if library.isClaudeAvailable(skill) {
+            SlimStatePill(skill: skill)
+                .disabled(!library.canToggleClaude(skill))
+        }
+    }
+
+    private var ghostActions: some View {
+        HStack(spacing: 6) {
             GhostIconButton(systemImage: "folder", help: "Reveal in Finder") {
                 revealInFinder()
             }
@@ -106,16 +130,31 @@ struct SkillDetail: View {
         }
     }
 
+    // Meta facts: one line when they fit, two stacked groups when narrow.
+    // Every item is fixedSize so nothing ever wraps inside itself.
     private var metaLine: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) { datesGroup; provenanceGroup }
+            VStack(alignment: .leading, spacing: 6) { datesGroup; provenanceGroup }
+        }
+    }
+
+    private var datesGroup: some View {
         HStack(spacing: 14) {
             metaItem("Added", RelativeDateText.string(for: skill.addedAt))
             metaItem("Updated", RelativeDateText.string(for: skill.touchedAt))
+        }
+        .fixedSize()
+    }
+
+    private var provenanceGroup: some View {
+        HStack(spacing: 14) {
             metaItem("In", skill.presences.map { library.toolDisplayName($0.targetID) }.joined(separator: " · "))
             if skill.isManagedByRegistry {
-                Chip(text: "Managed", tint: Theme.accent)
+                Chip(text: "Managed", tint: Theme.accent).fixedSize()
             }
             if skill.frontmatterFields["disable-model-invocation"] == "true" {
-                Chip(text: "Manual-only", tint: Theme.inkSecondary)
+                Chip(text: "Manual-only", tint: Theme.inkSecondary).fixedSize()
             }
             if let error = library.lastError {
                 Text(error)
@@ -124,6 +163,7 @@ struct SkillDetail: View {
                     .lineLimit(1)
             }
         }
+        .fixedSize()
     }
 
     private func metaItem(_ label: String, _ value: String) -> some View {
@@ -223,6 +263,7 @@ private struct SlimStatePill: View {
                 } label: {
                     Text(label)
                         .font(Theme.segment)
+                        .fixedSize()
                         .foregroundStyle(isCurrent ? (state == .off ? .white : Theme.ink) : Theme.inkTertiary)
                         .padding(.horizontal, 11)
                         .padding(.vertical, 5)

@@ -224,7 +224,7 @@ struct GhostIconButton: View {
 
 // MARK: - Accent switch
 
-/// Standard switch tinted with the theme accent, sized for rows.
+/// Standard switch in graphite — dark ON track, never the accent color.
 struct AccentToggle: View {
     let isOn: Bool
     let action: (Bool) -> Void
@@ -234,7 +234,7 @@ struct AccentToggle: View {
             .toggleStyle(.switch)
             .controlSize(.small)
             .labelsHidden()
-            .tint(Theme.accent)
+            .tint(Theme.switchOn)
     }
 }
 

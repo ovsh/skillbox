@@ -16,7 +16,8 @@ struct LibraryWindow: View {
     @Environment(PromptEditorModel.self) private var prompts
 
     @State private var selection: SidebarSelection = .allSkills
-    @State private var selectedSkillID: InstalledSkill.ID?
+    @State private var selectedSkillIDs: Set<InstalledSkill.ID> = []
+    @State private var anchorSkillID: InstalledSkill.ID?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -29,10 +30,15 @@ struct LibraryWindow: View {
             case .promptFile:
                 PromptEditor()
             case .allSkills, .tool:
-                SkillList(selection: selection, selectedSkillID: $selectedSkillID)
-                    .frame(width: Theme.listWidth)
+                SkillList(
+                    selection: selection,
+                    selectedSkillIDs: $selectedSkillIDs,
+                    anchorSkillID: $anchorSkillID
+                )
+                .frame(minWidth: 280, idealWidth: Theme.listWidth, maxWidth: Theme.listWidth)
                 Rectangle().fill(Theme.border).frame(width: 0.5)
                 skillDetail
+                    .layoutPriority(1)
             }
         }
         .background(Theme.canvas)
@@ -56,13 +62,18 @@ struct LibraryWindow: View {
 
     @ViewBuilder
     private var skillDetail: some View {
-        if let id = selectedSkillID, let skill = library.skill(withID: id) {
+        let selected = selectedSkillIDs.compactMap { library.skill(withID: $0) }
+        if selected.count > 1 {
+            BulkActionsPane(skills: selected) {
+                selectedSkillIDs.removeAll()
+            }
+        } else if let skill = selected.first {
             SkillDetail(skill: skill)
         } else {
             EmptyState(
                 systemImage: "sparkles",
                 title: "Select a skill",
-                message: "See what it does, where it's installed, and switch it for Claude."
+                message: "See what it does, where it's installed, and switch it for Claude. ⌘-click or ⇧-click to select several."
             )
         }
     }
