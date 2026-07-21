@@ -191,6 +191,17 @@ final class SkillLibraryModel {
         }
     }
 
+    /// Deletes a skill from disk: real folders to the Trash, symlinks remove
+    /// the link only, override entry cleared. The UI confirms before calling.
+    func deleteSkill(_ skill: InstalledSkill) {
+        guard !mutatingSkillIDs.contains(skill.id) else { return }
+        let deleter = SkillDeleter(settingsStore: settingsStore)
+        performMutation(on: skill) {
+            try deleter.delete(skill)
+        }
+        Analytics.track(.skillDeleted(skill: skill.dirName))
+    }
+
     /// Per-tool folder shelving for tools without an override mechanism.
     func setToolPresence(_ skill: InstalledSkill, targetID: String, enabled: Bool) {
         // Never move any copy of a skill that participates in symlinks:

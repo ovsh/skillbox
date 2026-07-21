@@ -1,65 +1,69 @@
 import SwiftUI
 
-/// Skillbox design language — "quiet desk".
-/// Warm paper neutrals, one terracotta accent, hairline borders, soft motion.
-/// Everything adapts to light/dark; nothing is pure white or pure black.
+/// Skillbox design language — "Graphite".
+/// An instrument next to Codex: near-black neutrals, hairlines, monochrome
+/// iconography. Color appears only where state lives — dim green for active,
+/// one rationed terracotta accent. No system blue anywhere.
 enum Theme {
     // MARK: Ink (text hierarchy)
 
-    /// Primary text. Warm near-black / warm off-white.
-    static let ink = Color(light: .init(hex: 0x2A2622), dark: .init(hex: 0xEDE9E3))
-    /// Secondary text.
-    static let inkSecondary = Color(light: .init(hex: 0x6E675E), dark: .init(hex: 0xA39C91))
-    /// Tertiary / metadata text.
-    static let inkTertiary = Color(light: .init(hex: 0x9B948A), dark: .init(hex: 0x736D64))
+    static let ink = Color(light: .init(hex: 0x1D1D20), dark: .init(hex: 0xE9EAEC))
+    static let inkSecondary = Color(light: .init(hex: 0x6B6E76), dark: .init(hex: 0x9A9DA4))
+    static let inkTertiary = Color(light: .init(hex: 0xA2A5AD), dark: .init(hex: 0x5C5F66))
 
     // MARK: Surfaces
 
-    /// Window canvas — warm paper.
-    static let canvas = Color(light: .init(hex: 0xFAF9F6), dark: .init(hex: 0x201E1B))
-    /// Raised card / detail pane surface.
-    static let card = Color(light: .init(hex: 0xFFFFFE), dark: .init(hex: 0x2A2723))
-    /// Sunken well (editors, code).
-    static let well = Color(light: .init(hex: 0xF3F1EC), dark: .init(hex: 0x191714))
-    /// Hover wash over rows.
-    static let hover = Color(light: .init(hex: 0x54432E, alpha: 0.05), dark: .init(hex: 0xEDE9E3, alpha: 0.05))
-    /// Selected row wash.
-    static let selection = Color(light: .init(hex: 0xC2593A, alpha: 0.10), dark: .init(hex: 0xD9714F, alpha: 0.16))
+    /// Window canvas.
+    static let canvas = Color(light: .init(hex: 0xF7F7F8), dark: .init(hex: 0x101012))
+    /// Sidebar / secondary panel.
+    static let panel = Color(light: .init(hex: 0xFFFFFF), dark: .init(hex: 0x151518))
+    /// Raised wells: search field, editor surface, code.
+    static let raised = Color(light: .init(hex: 0xF1F1F3), dark: .init(hex: 0x1B1B1F))
+    /// Hover wash.
+    static let hover = Color(light: .init(hex: 0x000000, alpha: 0.04), dark: .init(hex: 0xFFFFFF, alpha: 0.05))
+    /// Selection wash — soft neutral, never blue.
+    static let selection = Color(light: .init(hex: 0x000000, alpha: 0.05), dark: .init(hex: 0xFFFFFF, alpha: 0.06))
+    /// Fill for the selected segment of the state pill.
+    static let segmentFill = Color(light: .init(hex: 0x000000, alpha: 0.09), dark: .init(hex: 0xFFFFFF, alpha: 0.13))
     /// Hairline borders.
-    static let border = Color(light: .init(hex: 0x54432E, alpha: 0.10), dark: .init(hex: 0xEDE9E3, alpha: 0.09))
+    static let border = Color(light: .init(hex: 0x000000, alpha: 0.08), dark: .init(hex: 0xFFFFFF, alpha: 0.07))
 
-    // MARK: Accent
+    // MARK: State color
 
-    /// The one accent — terracotta. Active switches, selection tint, links.
-    static let accent = Color(light: .init(hex: 0xC2593A), dark: .init(hex: 0xD9714F))
-    static let accentDeep = Color(light: .init(hex: 0xA84A2F), dark: .init(hex: 0xC2593A))
-    /// Positive state (active badge).
-    static let active = Color(light: .init(hex: 0x4A7C59), dark: .init(hex: 0x6FA97F))
+    /// Active-for-Claude state. The only green in the app.
+    static let live = Color(light: .init(hex: 0x3E8B55), dark: .init(hex: 0x58A56E))
+    /// The one accent — terracotta. Switch fills, Off segment, dirty text.
+    static let accent = Color(light: .init(hex: 0xC2593A), dark: .init(hex: 0xD4795A))
+    /// Destructive hover tint.
+    static let danger = Color(light: .init(hex: 0xC94F42), dark: .init(hex: 0xE5695A))
 
     // MARK: Type
 
-    static func title(_ size: CGFloat = 20) -> Font { .system(size: size, weight: .semibold) }
+    static func title(_ size: CGFloat = 21) -> Font { .system(size: size, weight: .semibold) }
     static let body = Font.system(size: 13)
     static let bodyMedium = Font.system(size: 13, weight: .medium)
-    static let secondary = Font.system(size: 11)
+    static let secondary = Font.system(size: 11.5)
     static let meta = Font.system(size: 10.5)
-    static let label = Font.system(size: 10, weight: .semibold)   // small-caps section labels
+    static let label = Font.system(size: 10, weight: .bold)     // small-caps section labels
+    static let segment = Font.system(size: 10.5, weight: .semibold)
     static let mono = Font.system(size: 11, design: .monospaced)
     static let editor = Font.system(size: 12.5, design: .monospaced)
 
     // MARK: Metrics
 
-    static let radius: CGFloat = 12       // cards, panes
-    static let radiusSmall: CGFloat = 7   // rows, chips
+    static let radius: CGFloat = 10
+    static let radiusSmall: CGFloat = 8
     static let rowHeight: CGFloat = 44
     static let gutter: CGFloat = 20
+    static let sidebarWidth: CGFloat = 218
+    static let listWidth: CGFloat = 356
 
     // MARK: Motion
 
     /// The one spring for state changes — snappy, never bouncy.
     static let spring = Animation.spring(response: 0.28, dampingFraction: 0.86)
-    /// Quick fades for hover/appear.
-    static let fade = Animation.easeOut(duration: 0.15)
+    /// Quick fades for hover/morph (the dot→switch crossfade).
+    static let fade = Animation.easeOut(duration: 0.12)
 }
 
 // MARK: - Adaptive color helper
@@ -94,7 +98,7 @@ struct SectionLabel: View {
         Text(text)
             .font(Theme.label)
             .textCase(.uppercase)
-            .tracking(0.8)
+            .tracking(0.9)
             .foregroundStyle(Theme.inkTertiary)
     }
 }

@@ -4,6 +4,7 @@ import Foundation
 enum AnalyticsEvent {
     case appLaunched(isFirstLaunch: Bool)
     case skillToggled(skill: String, enabled: Bool)
+    case skillDeleted(skill: String)
     case overrideChanged(skill: String, state: String)
     case toolPresenceToggled(target: String, enabled: Bool)
     case promptSaved(file: String)
@@ -14,6 +15,7 @@ enum AnalyticsEvent {
         switch self {
         case .appLaunched: return "app_launched"
         case .skillToggled: return "skill_toggled"
+        case .skillDeleted: return "skill_deleted"
         case .overrideChanged: return "override_changed"
         case .toolPresenceToggled: return "tool_presence_toggled"
         case .promptSaved: return "prompt_saved"
@@ -28,6 +30,8 @@ enum AnalyticsEvent {
             return ["is_first_launch": isFirstLaunch]
         case .skillToggled(let skill, let enabled):
             return ["skill": skill, "enabled": enabled]
+        case .skillDeleted(let skill):
+            return ["skill": skill]
         case .overrideChanged(let skill, let state):
             return ["skill": skill, "state": state]
         case .toolPresenceToggled(let target, let enabled):

@@ -52,7 +52,7 @@ struct StatusDot: View {
 
     var body: some View {
         Circle()
-            .fill(isOn ? Theme.active : .clear)
+            .fill(isOn ? Theme.live : .clear)
             .overlay(Circle().strokeBorder(isOn ? .clear : Theme.inkTertiary, lineWidth: 1))
             .frame(width: 7, height: 7)
     }
@@ -66,7 +66,7 @@ struct Card<Content: View>: View {
 
     var body: some View {
         content
-            .background(Theme.card, in: .rect(cornerRadius: Theme.radius))
+            .background(Theme.panel, in: .rect(cornerRadius: Theme.radius))
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.radius)
                     .strokeBorder(Theme.border, lineWidth: 0.5)
@@ -161,6 +161,64 @@ struct QuietButtonStyle: ButtonStyle {
                 .animation(Theme.fade, value: configuration.isPressed)
                 .onHover { isHovered = $0 }
         }
+    }
+}
+
+// MARK: - Morph toggle (Graphite signature)
+
+/// A status dot that crossfades into a switch while its row is hovered —
+/// one-click toggling without a wall of always-on switches.
+struct MorphToggle: View {
+    let isOn: Bool
+    let isHovered: Bool
+    let isEnabled: Bool
+    let action: (Bool) -> Void
+
+    var body: some View {
+        ZStack {
+            StatusDot(isOn: isOn)
+                .opacity(isHovered ? 0 : 1)
+            AccentToggle(isOn: isOn, action: action)
+                .opacity(isHovered ? 1 : 0)
+                .disabled(!isEnabled)
+                .allowsHitTesting(isHovered)
+        }
+        .frame(width: 34, height: 20)
+        .animation(Theme.fade, value: isHovered)
+    }
+}
+
+// MARK: - Ghost icon button
+
+/// 26pt hairline square icon button for detail-header actions.
+struct GhostIconButton: View {
+    let systemImage: String
+    let help: String
+    var isDestructive = false
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(
+                    isHovered ? (isDestructive ? Theme.danger : Theme.ink) : Theme.inkSecondary
+                )
+                .frame(width: 26, height: 26)
+                .background(isHovered ? Theme.hover : .clear, in: .rect(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(
+                            isHovered && isDestructive ? Theme.danger.opacity(0.4) : Theme.border,
+                            lineWidth: 0.5
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help(help)
+        .accessibilityLabel(help)
     }
 }
 

@@ -2,66 +2,126 @@ import MarkdownUI
 import SkillboxKit
 import SwiftUI
 
-/// Right column: everything about one skill — state controls, provenance,
-/// and the rendered SKILL.md.
+/// Right pane: one skill — slim header controls, provenance, rendered SKILL.md.
 struct SkillDetail: View {
     @Environment(SkillLibraryModel.self) private var library
     let skill: InstalledSkill
+    @State private var confirmingDelete = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.gutter) {
+            VStack(alignment: .leading, spacing: 0) {
                 header
-                controls
-                Divider().foregroundStyle(Theme.border)
+                caption
+                    .padding(.top, 10)
+                if !skill.description.isEmpty {
+                    Text(skill.description)
+                        .font(Theme.body)
+                        .foregroundStyle(Theme.inkSecondary)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
+                }
+                metaLine
+                    .padding(.top, 12)
+                otherTools
                 document
+                    .padding(.top, 20)
             }
-            .padding(Theme.gutter + 4)
-            .frame(maxWidth: 720, alignment: .leading)
+            .padding(EdgeInsets(top: 24, leading: 28, bottom: 40, trailing: 28))
+            .frame(maxWidth: 680, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Theme.canvas)
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    revealInFinder()
-                } label: {
-                    Label("Show in Finder", systemImage: "folder")
+    }
+
+    // MARK: Header — title · slim state pill · ghost actions
+
+    private var header: some View {
+        HStack(spacing: 10) {
+            Text(skill.name)
+                .font(Theme.title())
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
+
+            if library.isClaudeAvailable(skill) {
+                SlimStatePill(skill: skill)
+                    .disabled(!library.canToggleClaude(skill))
+            }
+
+            GhostIconButton(systemImage: "folder", help: "Reveal in Finder") {
+                revealInFinder()
+            }
+            GhostIconButton(systemImage: "trash", help: "Delete skill…", isDestructive: true) {
+                confirmingDelete = true
+            }
+            .confirmationDialog(
+                "Delete “\(skill.name)”?",
+                isPresented: $confirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Move to Trash", role: .destructive) {
+                    library.deleteSkill(skill)
                 }
-                .help("Show in Finder")
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(deleteMessage)
             }
         }
     }
 
-    // MARK: Header
+    private var deleteMessage: String {
+        let links = skill.presences.filter(\.isSymlink).count
+        let folders = skill.presences.count - links
+        switch (folders > 0, links > 0) {
+        case (true, true):
+            return "The skill folder moves to the Trash and \(links == 1 ? "its link is" : "\(links) links are") removed — the linked originals stay where they are. Its Claude setting is cleared."
+        case (true, false):
+            return "The skill folder moves to the Trash and its Claude setting is cleared. You can restore it from the Trash."
+        default:
+            return "Only the link\(links == 1 ? "" : "s") to this skill \(links == 1 ? "is" : "are") removed — the original files stay where they are. Its Claude setting is cleared."
+        }
+    }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Text(skill.name)
-                    .font(Theme.title(22))
-                    .foregroundStyle(Theme.ink)
-                if skill.isManagedByRegistry {
-                    Chip(text: "Managed", tint: Theme.accent)
-                }
+    private var caption: some View {
+        Text(captionText)
+            .font(Theme.meta)
+            .foregroundStyle(library.overridesUnreadable ? Theme.accent : Theme.inkTertiary)
+    }
+
+    private var captionText: String {
+        guard library.isClaudeAvailable(skill) else {
+            return "No live copy in ~/.claude/skills — Claude Code can't load this skill."
+        }
+        if library.overridesUnreadable {
+            return "~/.claude/settings.json can't be parsed — fix it (or restore the .skillbox.bak) to re-enable switching."
+        }
+        switch skill.claudeOverride ?? .on {
+        case .on: return "On — Claude can invoke this skill, and /\(skill.dirName) runs it directly. Off hides it from Claude; files stay on disk."
+        case .nameOnly: return "Name only — Claude sees the name but won't auto-invoke. /\(skill.dirName) still works."
+        case .userInvocableOnly: return "Manual only — hidden from Claude; you can still run /\(skill.dirName) yourself."
+        case .off: return "Off — hidden from Claude, the / menu, and Agent SDK apps. Files stay on disk; Delete removes them."
+        }
+    }
+
+    private var metaLine: some View {
+        HStack(spacing: 14) {
+            metaItem("Added", RelativeDateText.string(for: skill.addedAt))
+            metaItem("Updated", RelativeDateText.string(for: skill.touchedAt))
+            metaItem("In", skill.presences.map { library.toolDisplayName($0.targetID) }.joined(separator: " · "))
+            if skill.isManagedByRegistry {
+                Chip(text: "Managed", tint: Theme.accent)
             }
-
-            if !skill.description.isEmpty {
-                Text(skill.description)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            if skill.frontmatterFields["disable-model-invocation"] == "true" {
+                Chip(text: "Manual-only", tint: Theme.inkSecondary)
             }
-
-            HStack(spacing: 12) {
-                metaItem("Added", RelativeDateText.string(for: skill.addedAt))
-                metaItem("Touched", RelativeDateText.string(for: skill.touchedAt))
-                if let model = skill.frontmatterFields["model"] {
-                    metaItem("Model", model)
-                }
-                if skill.frontmatterFields["disable-model-invocation"] == "true" {
-                    Chip(text: "Manual-only", tint: Theme.inkSecondary)
-                }
+            if let error = library.lastError {
+                Text(error)
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.danger)
+                    .lineLimit(1)
             }
         }
     }
@@ -77,85 +137,41 @@ struct SkillDetail: View {
         }
     }
 
-    // MARK: Controls
+    // MARK: Other tools (shelving)
 
-    private var controls: some View {
-        let isMutating = library.mutatingSkillIDs.contains(skill.id)
-        return Card {
-            VStack(alignment: .leading, spacing: 14) {
-                // Claude Code + Agent SDK: the sanctioned override, 4 states.
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        SectionLabel(text: "Claude Code & Agent SDK")
-                        Spacer()
-                        StatusDot(isOn: library.isClaudeAvailable(skill) && library.isActiveForClaude(skill))
-                    }
-                    if library.isClaudeAvailable(skill) {
-                        OverridePicker(skill: skill)
-                            .disabled(!library.canToggleClaude(skill))
-                        Text(library.overridesUnreadable
-                             ? "~/.claude/settings.json can't be parsed — fix it (or restore the .skillbox.bak) to re-enable switches."
-                             : overrideCaption)
-                            .font(Theme.meta)
-                            .foregroundStyle(library.overridesUnreadable ? Theme.accent : Theme.inkTertiary)
-                    } else {
-                        Text("No live copy in ~/.claude/skills — Claude Code can't load this skill, so there's nothing to switch.")
-                            .font(Theme.meta)
-                            .foregroundStyle(Theme.inkTertiary)
-                    }
-                }
-
-                // Other tools: folder shelving per tool. If ANY copy of this
-                // skill is a symlink, every copy stays put — moving the real
-                // directory would dangle the links pointing at it.
-                let otherPresences = skill.presences.filter { $0.targetID != "claude" }
-                let groupHasSymlink = skill.presences.contains { $0.isSymlink }
-                if !otherPresences.isEmpty {
-                    Divider().foregroundStyle(Theme.border)
-                    VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "Other Tools")
-                        ForEach(otherPresences, id: \.self) { presence in
-                            HStack(spacing: 8) {
-                                Text(library.toolDisplayName(presence.targetID))
-                                    .font(Theme.body)
-                                    .foregroundStyle(Theme.ink)
-                                if presence.isBroken {
-                                    Chip(text: "Broken link", tint: .red)
-                                } else if presence.isSymlink {
-                                    Chip(text: "Symlinked", tint: Theme.inkSecondary)
-                                }
-                                Spacer()
-                                AccentToggle(isOn: !presence.isShelved) { enabled in
-                                    library.setToolPresence(skill, targetID: presence.targetID, enabled: enabled)
-                                }
-                                .disabled(groupHasSymlink || presence.isBroken)
-                            }
+    @ViewBuilder
+    private var otherTools: some View {
+        let otherPresences = skill.presences.filter { $0.targetID != "claude" }
+        let groupHasSymlink = skill.presences.contains { $0.isSymlink }
+        if !otherPresences.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Rectangle().fill(Theme.border).frame(height: 0.5)
+                    .padding(.vertical, 8)
+                SectionLabel(text: "Other Tools")
+                ForEach(otherPresences, id: \.self) { presence in
+                    HStack(spacing: 8) {
+                        Text(library.toolDisplayName(presence.targetID))
+                            .font(Theme.body)
+                            .foregroundStyle(Theme.ink)
+                        if presence.isBroken {
+                            Chip(text: "Broken link", tint: Theme.danger)
+                        } else if presence.isSymlink {
+                            Chip(text: "Symlinked", tint: Theme.inkSecondary)
                         }
-                        Text(groupHasSymlink
-                             ? "This skill is linked between tools — moving any copy would break those links, so shelving is disabled. Use the Claude switch to control Claude Code."
-                             : "Off moves this folder to Skillbox's shelf and this tool stops reading this copy. Other copies of the same skill are unaffected.")
-                            .font(Theme.meta)
-                            .foregroundStyle(Theme.inkTertiary)
+                        Spacer()
+                        AccentToggle(isOn: !presence.isShelved) { enabled in
+                            library.setToolPresence(skill, targetID: presence.targetID, enabled: enabled)
+                        }
+                        .disabled(groupHasSymlink || presence.isBroken)
                     }
                 }
-
-                if let error = library.lastError {
-                    Text(error)
-                        .font(Theme.secondary)
-                        .foregroundStyle(.red)
-                }
+                Text(groupHasSymlink
+                     ? "This skill is linked between tools — moving any copy would break those links, so shelving is disabled."
+                     : "Off moves this folder to Skillbox's shelf and this tool stops reading this copy. Other copies are unaffected.")
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
             }
-            .padding(14)
-            .disabled(isMutating)
-        }
-    }
-
-    private var overrideCaption: String {
-        switch skill.claudeOverride ?? .on {
-        case .on: "Claude can invoke this skill and you can run it with /\(skill.dirName)."
-        case .nameOnly: "Claude sees only the name — it won't auto-invoke. /\(skill.dirName) still works."
-        case .userInvocableOnly: "Hidden from Claude; you can still run /\(skill.dirName)."
-        case .off: "Fully hidden from Claude, the / menu, and Agent SDK apps."
+            .padding(.top, 14)
         }
     }
 
@@ -164,7 +180,11 @@ struct SkillDetail: View {
     @ViewBuilder
     private var document: some View {
         if let presence = primaryPresence {
-            SkillDocument(directoryPath: presence.path, revision: skill.touchedAt)
+            VStack(alignment: .leading, spacing: 0) {
+                Rectangle().fill(Theme.border).frame(height: 0.5)
+                SkillDocument(directoryPath: presence.path, revision: skill.touchedAt, dropTitle: skill.name)
+                    .padding(.top, 18)
+            }
         } else {
             Text("No readable SKILL.md.")
                 .font(Theme.secondary)
@@ -173,7 +193,7 @@ struct SkillDetail: View {
     }
 
     private var primaryPresence: SkillToolPresence? {
-        skill.presences.first { !$0.isShelved } ?? skill.presences.first
+        skill.presences.first { !$0.isShelved && !$0.isBroken } ?? skill.presences.first
     }
 
     private func revealInFinder() {
@@ -182,28 +202,49 @@ struct SkillDetail: View {
     }
 }
 
-// MARK: - Override picker
+// MARK: - Slim state pill
 
-/// Segmented 4-state control for skillOverrides.
-private struct OverridePicker: View {
+/// The header activation control: On / Name / Manual / Off in one hairline
+/// pill. Selected segment fills neutral; a selected Off fills terracotta.
+private struct SlimStatePill: View {
     @Environment(SkillLibraryModel.self) private var library
     let skill: InstalledSkill
 
+    private static let states: [(SkillOverrideState, String)] = [
+        (.on, "On"), (.nameOnly, "Name"), (.userInvocableOnly, "Manual"), (.off, "Off"),
+    ]
+
     var body: some View {
-        Picker("", selection: Binding(
-            get: { skill.claudeOverride ?? .on },
-            set: { newState in
-                library.setClaudeOverride(skill, newState == .on ? nil : newState)
+        HStack(spacing: 0) {
+            ForEach(Self.states, id: \.0) { state, label in
+                let isCurrent = (skill.claudeOverride ?? .on) == state
+                Button {
+                    library.setClaudeOverride(skill, state == .on ? nil : state)
+                } label: {
+                    Text(label)
+                        .font(Theme.segment)
+                        .foregroundStyle(isCurrent ? (state == .off ? .white : Theme.ink) : Theme.inkTertiary)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(
+                            isCurrent ? (state == .off ? Theme.accent : Theme.segmentFill) : .clear
+                        )
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                if state != .off {
+                    Rectangle().fill(Theme.border).frame(width: 0.5, height: 16)
+                }
             }
-        )) {
-            Text("On").tag(SkillOverrideState.on)
-            Text("Name only").tag(SkillOverrideState.nameOnly)
-            Text("Manual only").tag(SkillOverrideState.userInvocableOnly)
-            Text("Off").tag(SkillOverrideState.off)
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .controlSize(.small)
+        .background(Theme.raised.opacity(0.5))
+        .clipShape(.rect(cornerRadius: 7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 7)
+                .strokeBorder(Theme.border, lineWidth: 0.5)
+        )
+        .animation(Theme.fade, value: skill.claudeOverride)
+        .accessibilityLabel("Claude state")
     }
 }
 
@@ -215,6 +256,7 @@ private struct OverridePicker: View {
 private struct SkillDocument: View {
     let directoryPath: String
     let revision: Date?
+    var dropTitle: String? = nil
     @State private var content: String?
 
     private struct LoadKey: Hashable {
@@ -232,7 +274,7 @@ private struct SkillDocument: View {
                         .font(Theme.mono)
                         .textSelection(.enabled)
                 } else {
-                    Markdown(MarkdownContent(stripFrontmatter(content)))
+                    Markdown(MarkdownContent(prepared(content)))
                         .markdownTheme(.skillbox)
                         .textSelection(.enabled)
                 }
@@ -252,15 +294,26 @@ private struct SkillDocument: View {
         }
     }
 
-    private func stripFrontmatter(_ text: String) -> String {
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-        guard lines.first?.trimmingCharacters(in: .whitespaces) == "---" else { return text }
-        if let closing = lines.dropFirst().firstIndex(where: {
-            $0.trimmingCharacters(in: .whitespaces) == "---"
-        }) {
-            return lines[(closing + 1)...].joined(separator: "\n")
+    /// Strips frontmatter, and drops a leading H1 that just repeats the title.
+    private func prepared(_ text: String) -> String {
+        var lines = Array(text.split(separator: "\n", omittingEmptySubsequences: false))
+        if lines.first?.trimmingCharacters(in: .whitespaces) == "---",
+           let closing = lines.dropFirst().firstIndex(where: {
+               $0.trimmingCharacters(in: .whitespaces) == "---"
+           }) {
+            lines = Array(lines[(closing + 1)...])
         }
-        return text
+        while lines.first?.trimmingCharacters(in: .whitespaces).isEmpty == true {
+            lines.removeFirst()
+        }
+        if let dropTitle,
+           let first = lines.first?.trimmingCharacters(in: .whitespaces),
+           first.hasPrefix("# "),
+           first.dropFirst(2).trimmingCharacters(in: .whitespaces)
+               .caseInsensitiveCompare(dropTitle) == .orderedSame {
+            lines.removeFirst()
+        }
+        return lines.joined(separator: "\n")
     }
 }
 

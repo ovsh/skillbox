@@ -1,15 +1,16 @@
 import SkillboxKit
 import SwiftUI
 
-/// The middle column: searchable list of skills for the focused section.
+/// The middle column: search + the skill rows for the focused sidebar slice.
 struct SkillList: View {
     @Environment(SkillLibraryModel.self) private var library
-    let section: LibrarySection
+    let selection: SidebarSelection
     @Binding var selectedSkillID: InstalledSkill.ID?
+    @FocusState private var searchFocused: Bool
 
     private var visibleSkills: [InstalledSkill] {
         let base = library.filteredSkills
-        guard case .tool(let targetID) = section else { return base }
+        guard case .tool(let targetID) = selection else { return base }
         return base.filter { skill in
             skill.presences.contains { $0.targetID == targetID }
         }
@@ -18,7 +19,12 @@ struct SkillList: View {
     var body: some View {
         @Bindable var library = library
 
-        Group {
+        VStack(spacing: 0) {
+            SearchField(text: $library.searchText, isFocused: $searchFocused)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+
             if library.skills.isEmpty && !library.isRefreshing {
                 EmptyState(
                     systemImage: "shippingbox",
@@ -26,31 +32,77 @@ struct SkillList: View {
                     message: "Skills you add to ~/.claude/skills or ~/.agents/skills appear here."
                 )
             } else {
-                List(selection: $selectedSkillID) {
-                    ForEach(visibleSkills) { skill in
-                        SkillRow(skill: skill, isSelected: selectedSkillID == skill.id)
-                            .tag(skill.id)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 1, leading: 8, bottom: 1, trailing: 8))
+                ScrollView {
+                    LazyVStack(spacing: 1) {
+                        ForEach(visibleSkills) { skill in
+                            SkillRow(
+                                skill: skill,
+                                isSelected: selectedSkillID == skill.id
+                            ) {
+                                selectedSkillID = skill.id
+                            }
+                        }
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 10)
+                    .animation(Theme.spring, value: visibleSkills.map(\.id))
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .animation(Theme.spring, value: visibleSkills.map(\.id))
             }
         }
         .background(Theme.canvas)
-        .searchable(text: $library.searchText, placement: .toolbar, prompt: "Search skills")
-        .navigationTitle(navigationTitle)
     }
+}
 
-    private var navigationTitle: String {
-        switch section {
-        case .allSkills: return "Skills"
-        case .tool(let id): return library.toolFilters.first { $0.id == id }?.shortName ?? "Skills"
-        case .prompts: return "Prompts"
+// MARK: - Search field
+
+private struct SearchField: View {
+    @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.inkTertiary)
+            TextField("Search skills", text: $text)
+                .textFieldStyle(.plain)
+                .font(Theme.body)
+                .foregroundStyle(Theme.ink)
+                .focused(isFocused)
+            if text.isEmpty {
+                Text("⌘K")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Theme.inkTertiary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Theme.border, lineWidth: 0.5)
+                    )
+            } else {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.inkTertiary)
+                }
+                .buttonStyle(.plain)
+            }
         }
+        .padding(.horizontal, 9)
+        .frame(height: 30)
+        .background(Theme.raised, in: .rect(cornerRadius: Theme.radiusSmall))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.radiusSmall)
+                .strokeBorder(isFocused.wrappedValue ? Theme.accent.opacity(0.6) : Theme.border, lineWidth: 0.5)
+        )
+        .background(
+            // Invisible ⌘K target that focuses the field.
+            Button("") { isFocused.wrappedValue = true }
+                .keyboardShortcut("k", modifiers: .command)
+                .opacity(0)
+        )
     }
 }
 
@@ -59,46 +111,62 @@ struct SkillList: View {
 struct SkillRow: View {
     @Environment(SkillLibraryModel.self) private var library
     let skill: InstalledSkill
-    var isSelected = false
+    let isSelected: Bool
+    let select: () -> Void
+    @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
+        Button(action: select) {
+            HStack(spacing: 10) {
+                if library.isClaudeAvailable(skill) {
+                    MorphToggle(
+                        isOn: library.isActiveForClaude(skill),
+                        isHovered: isHovered,
+                        isEnabled: library.canToggleClaude(skill)
+                    ) { newValue in
+                        library.setActive(skill, newValue)
+                    }
+                } else {
+                    // Not loadable by Claude: a hollow dot that never morphs.
+                    StatusDot(isOn: false)
+                        .frame(width: 34, height: 20)
+                        .help("No live copy in ~/.claude/skills")
+                        .opacity(0.5)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
                     Text(skill.name)
                         .font(Theme.bodyMedium)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
-                    if skill.claudeOverride == .nameOnly || skill.claudeOverride == .userInvocableOnly {
-                        Chip(text: "Partial", tint: Theme.accent)
-                    }
-                    if skill.presences.contains(where: \.isShelved) {
-                        Chip(text: "Shelved elsewhere", tint: Theme.inkSecondary)
-                    }
+                    Text(skill.description.isEmpty ? skill.dirName : skill.description)
+                        .font(Theme.secondary)
+                        .foregroundStyle(Theme.inkSecondary)
+                        .lineLimit(1)
                 }
-                Text(skill.description.isEmpty ? skill.dirName : skill.description)
-                    .font(Theme.secondary)
-                    .foregroundStyle(Theme.inkSecondary)
-                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
+                RelativeDateText(date: skill.touchedAt)
             }
-
-            Spacer(minLength: 8)
-
-            RelativeDateText(date: skill.touchedAt)
-
-            if library.isClaudeAvailable(skill) {
-                AccentToggle(isOn: library.isActiveForClaude(skill)) { newValue in
-                    library.setActive(skill, newValue)
-                }
-                .disabled(!library.canToggleClaude(skill))
-                .help("Active for Claude Code & Agent SDK")
-            } else {
-                Chip(text: "Not in Claude", tint: Theme.inkTertiary)
-                    .help("No live copy in ~/.claude/skills — Claude Code can't load it.")
-            }
+            .opacity(rowOpacity)
+            .padding(.horizontal, 10)
+            .frame(height: Theme.rowHeight)
+            .background(
+                isSelected ? Theme.selection : (isHovered ? Theme.hover : .clear),
+                in: .rect(cornerRadius: Theme.radiusSmall)
+            )
+            .contentShape(.rect(cornerRadius: Theme.radiusSmall))
         }
-        .rowChrome(isSelected: isSelected)
-        .opacity(!library.isClaudeAvailable(skill) || library.isActiveForClaude(skill) ? 1 : 0.55)
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(Theme.fade) { isHovered = hovering }
+        }
         .animation(Theme.spring, value: library.isActiveForClaude(skill))
+    }
+
+    private var rowOpacity: Double {
+        guard library.isClaudeAvailable(skill) else { return 1 }
+        return library.isActiveForClaude(skill) ? 1 : 0.5
     }
 }
