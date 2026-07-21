@@ -88,16 +88,28 @@ struct SkillDetail: View {
                     HStack {
                         SectionLabel(text: "Claude Code & Agent SDK")
                         Spacer()
-                        StatusDot(isOn: library.isActiveForClaude(skill))
+                        StatusDot(isOn: library.isClaudeAvailable(skill) && library.isActiveForClaude(skill))
                     }
-                    OverridePicker(skill: skill)
-                    Text(overrideCaption)
-                        .font(Theme.meta)
-                        .foregroundStyle(Theme.inkTertiary)
+                    if library.isClaudeAvailable(skill) {
+                        OverridePicker(skill: skill)
+                            .disabled(!library.canToggleClaude(skill))
+                        Text(library.overridesUnreadable
+                             ? "~/.claude/settings.json can't be parsed — fix it (or restore the .skillbox.bak) to re-enable switches."
+                             : overrideCaption)
+                            .font(Theme.meta)
+                            .foregroundStyle(library.overridesUnreadable ? Theme.accent : Theme.inkTertiary)
+                    } else {
+                        Text("No live copy in ~/.claude/skills — Claude Code can't load this skill, so there's nothing to switch.")
+                            .font(Theme.meta)
+                            .foregroundStyle(Theme.inkTertiary)
+                    }
                 }
 
-                // Other tools: folder shelving per tool.
+                // Other tools: folder shelving per tool. If ANY copy of this
+                // skill is a symlink, every copy stays put — moving the real
+                // directory would dangle the links pointing at it.
                 let otherPresences = skill.presences.filter { $0.targetID != "claude" }
+                let groupHasSymlink = skill.presences.contains { $0.isSymlink }
                 if !otherPresences.isEmpty {
                     Divider().foregroundStyle(Theme.border)
                     VStack(alignment: .leading, spacing: 8) {
@@ -116,12 +128,12 @@ struct SkillDetail: View {
                                 AccentToggle(isOn: !presence.isShelved) { enabled in
                                     library.setToolPresence(skill, targetID: presence.targetID, enabled: enabled)
                                 }
-                                // Links are never moved — shelving one would
-                                // break its relative target resolution.
-                                .disabled(presence.isSymlink || presence.isBroken)
+                                .disabled(groupHasSymlink || presence.isBroken)
                             }
                         }
-                        Text("Off moves the folder to Skillbox's shelf; the tool stops seeing it. On restores it exactly as it was. Symlinked skills can't be shelved — control them with the Claude switch instead.")
+                        Text(groupHasSymlink
+                             ? "This skill is linked between tools — moving any copy would break those links, so shelving is disabled. Use the Claude switch to control Claude Code."
+                             : "Off moves this folder to Skillbox's shelf and this tool stops reading this copy. Other copies of the same skill are unaffected.")
                             .font(Theme.meta)
                             .foregroundStyle(Theme.inkTertiary)
                     }
@@ -152,7 +164,7 @@ struct SkillDetail: View {
     @ViewBuilder
     private var document: some View {
         if let presence = primaryPresence {
-            SkillDocument(directoryPath: presence.path)
+            SkillDocument(directoryPath: presence.path, revision: skill.touchedAt)
         } else {
             Text("No readable SKILL.md.")
                 .font(Theme.secondary)
@@ -198,9 +210,17 @@ private struct OverridePicker: View {
 // MARK: - Markdown document
 
 /// Renders SKILL.md asynchronously; plain text above the render limit.
+/// Load identity includes the content revision so edits re-render, and the
+/// cancellation check keeps a canceled read from clobbering a newer one.
 private struct SkillDocument: View {
     let directoryPath: String
+    let revision: Date?
     @State private var content: String?
+
+    private struct LoadKey: Hashable {
+        let path: String
+        let revision: Date?
+    }
 
     private static let renderLimit = 120 * 1024
 
@@ -222,11 +242,13 @@ private struct SkillDocument: View {
                     .foregroundStyle(Theme.inkTertiary)
             }
         }
-        .task(id: directoryPath) {
+        .task(id: LoadKey(path: directoryPath, revision: revision)) {
             let path = directoryPath + "/SKILL.md"
-            content = await Task.detached(priority: .userInitiated) {
+            let loaded = await Task.detached(priority: .userInitiated) {
                 try? String(contentsOfFile: path, encoding: .utf8)
             }.value
+            guard !Task.isCancelled else { return }
+            content = loaded
         }
     }
 

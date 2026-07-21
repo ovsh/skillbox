@@ -34,6 +34,7 @@ struct LibraryWindow: View {
             for: NSApplication.didBecomeActiveNotification
         )) { _ in
             library.refresh()
+            prompts.handleExternalChange()
         }
     }
 

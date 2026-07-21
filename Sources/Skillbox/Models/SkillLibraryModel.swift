@@ -17,6 +17,9 @@ final class SkillLibraryModel {
     /// Skills with a mutation in flight — their controls disable until the
     /// post-mutation re-scan publishes disk truth.
     private(set) var mutatingSkillIDs: Set<String> = []
+    /// True when ~/.claude/settings.json can't be parsed: Claude switches
+    /// disable rather than fabricating "on" states.
+    private(set) var overridesUnreadable = false
     /// Optimistic Claude-active state, keyed by skill id, shown while the
     /// write + re-scan round-trips so switches respond instantly instead of
     /// snapping back for a frame. Cleared when disk truth publishes.
@@ -73,7 +76,19 @@ final class SkillLibraryModel {
     }
 
     var activeCount: Int {
-        skills.filter { isActiveForClaude($0) }.count
+        skills.filter { isClaudeAvailable($0) && isActiveForClaude($0) }.count
+    }
+
+    /// Claude Code can only load skills with a live, non-broken copy in
+    /// ~/.claude/skills — everything else gets no Claude switch.
+    func isClaudeAvailable(_ skill: InstalledSkill) -> Bool {
+        skill.presences.contains { $0.targetID == "claude" && !$0.isShelved && !$0.isBroken }
+    }
+
+    /// The Claude switch is interactable: skill is loadable, settings are
+    /// parseable, and no mutation is in flight.
+    func canToggleClaude(_ skill: InstalledSkill) -> Bool {
+        isClaudeAvailable(skill) && !overridesUnreadable && !mutatingSkillIDs.contains(skill.id)
     }
 
     /// Five most recently touched skills — the menu bar popover's quick list.
@@ -106,12 +121,19 @@ final class SkillLibraryModel {
         }
         isRefreshing = true
         let scanner = scanner
+        let settingsStore = settingsStore
         let home = home
         Task.detached(priority: .userInitiated) {
             let result = scanner.scan(home: home)
+            // The scanner tolerates unreadable settings by reporting no
+            // overrides — probe separately so the UI can say so instead of
+            // fabricating "on" for every skill.
+            let overridesReadable = (try? settingsStore.overrides()) != nil
             await MainActor.run {
                 self.skills = result
+                self.overridesUnreadable = !overridesReadable
                 self.isRefreshing = false
+                self.rebuildSkillDirWatchers()
                 if self.refreshQueuedWhileBusy {
                     self.refreshQueuedWhileBusy = false
                     self.refresh()
@@ -124,11 +146,39 @@ final class SkillLibraryModel {
         }
     }
 
+    /// Skill content edits happen inside skill folders, which the root
+    /// watchers can't see — watch each live skill dir so touchedAt and
+    /// rendered SKILL.md stay honest. Rebuilt only when the path set changes.
+    private var skillDirMonitor: DirectoryMonitor?
+    private var watchedSkillPaths: Set<String> = []
+
+    private func rebuildSkillDirWatchers() {
+        let paths = Set(
+            skills
+                .flatMap(\.presences)
+                .filter { !$0.isBroken && !$0.isShelved }
+                .map(\.path)
+                .prefix(400)
+        )
+        guard paths != watchedSkillPaths else { return }
+        watchedSkillPaths = paths
+        skillDirMonitor = DirectoryMonitor(
+            directories: paths.map { URL(fileURLWithPath: $0) }
+        ) { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.refresh()
+            }
+        }
+    }
+
     // MARK: - Activation
 
     /// The list switch: on ↔ off via Claude's skillOverrides. Optimistic —
     /// the UI flips immediately; a scan follows to confirm reality.
     func setActive(_ skill: InstalledSkill, _ active: Bool) {
+        // A second click during the round-trip would be silently dropped by
+        // performMutation — refuse it before the optimistic state lies.
+        guard canToggleClaude(skill) else { return }
         optimisticActive[skill.id] = active
         setClaudeOverride(skill, active ? nil : .off)
         Analytics.track(.skillToggled(skill: skill.dirName, enabled: active))
@@ -143,6 +193,12 @@ final class SkillLibraryModel {
 
     /// Per-tool folder shelving for tools without an override mechanism.
     func setToolPresence(_ skill: InstalledSkill, targetID: String, enabled: Bool) {
+        // Never move any copy of a skill that participates in symlinks:
+        // shelving the real directory would dangle the other tools' links.
+        guard !skill.presences.contains(where: \.isSymlink) else {
+            lastError = "\(skill.name) is linked between tools — shelving is disabled to keep those links intact."
+            return
+        }
         guard let target = registry.targets.first(where: { $0.id == targetID }),
               let skillsPath = target.skillsPath else { return }
         let skillsDir = home.appendingPathComponent(skillsPath)

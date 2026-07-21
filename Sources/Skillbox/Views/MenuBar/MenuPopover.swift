@@ -66,15 +66,18 @@ struct MenuPopover: View {
 
     private func recentRow(_ skill: InstalledSkill) -> some View {
         HStack(spacing: 8) {
-            StatusDot(isOn: library.isActiveForClaude(skill))
+            StatusDot(isOn: library.isClaudeAvailable(skill) && library.isActiveForClaude(skill))
             Text(skill.name)
                 .font(Theme.body)
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
             Spacer(minLength: 6)
             RelativeDateText(date: skill.touchedAt)
-            AccentToggle(isOn: library.isActiveForClaude(skill)) { newValue in
-                library.setActive(skill, newValue)
+            if library.isClaudeAvailable(skill) {
+                AccentToggle(isOn: library.isActiveForClaude(skill)) { newValue in
+                    library.setActive(skill, newValue)
+                }
+                .disabled(!library.canToggleClaude(skill))
             }
         }
         .padding(.horizontal, 6)

@@ -35,21 +35,51 @@ public enum Frontmatter {
         return String(data: data, encoding: .utf8)
     }
 
-    /// Extracts all flat key/value pairs from a frontmatter fence. Later
-    /// duplicate keys win. Returns an empty map without an opening fence.
+    /// Extracts all top-level key/value pairs from a frontmatter fence,
+    /// including literal (`|`) and folded (`>`) block scalars, which real
+    /// skills use for multiline descriptions. Later duplicate keys win.
+    /// Returns an empty map without an opening fence.
     public static func parseAllFields(_ content: String) -> [String: String] {
         let lines = content.split(separator: "\n", omittingEmptySubsequences: false)
         guard lines.first?.trimmed == "---" else { return [:] }
 
         var result: [String: String] = [:]
-        for line in lines.dropFirst() {
+        var index = lines.index(after: lines.startIndex)
+
+        while index < lines.endIndex {
+            let line = lines[index]
             if line.trimmed == "---" { break }
+            index = lines.index(after: index)
+
+            // Top-level keys only — indented lines belong to a block value.
+            guard let first = line.first, first != " ", first != "\t" else { continue }
             let parts = line.split(separator: ":", maxSplits: 1)
             guard parts.count == 2 else { continue }
             let key = parts[0].trimmingCharacters(in: .whitespaces)
             var value = parts[1].trimmingCharacters(in: .whitespaces)
-            if (value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2) ||
-               (value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2) {
+
+            let blockMarker = value.first.map { $0 == "|" || $0 == ">" } ?? false
+            if blockMarker {
+                var blockLines: [String] = []
+                while index < lines.endIndex {
+                    let blockLine = lines[index]
+                    if blockLine.trimmed == "---" { break }
+                    if blockLine.trimmed.isEmpty {
+                        blockLines.append("")
+                        index = lines.index(after: index)
+                        continue
+                    }
+                    guard let firstChar = blockLine.first, firstChar == " " || firstChar == "\t" else { break }
+                    blockLines.append(blockLine.trimmed)
+                    index = lines.index(after: index)
+                }
+                while blockLines.last?.isEmpty == true { blockLines.removeLast() }
+                // Folded (>) joins with spaces; literal (|) keeps line breaks.
+                value = value.hasPrefix(">")
+                    ? blockLines.joined(separator: " ")
+                    : blockLines.joined(separator: "\n")
+            } else if (value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2) ||
+                      (value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2) {
                 value = String(value.dropFirst().dropLast())
             }
             result[key] = value

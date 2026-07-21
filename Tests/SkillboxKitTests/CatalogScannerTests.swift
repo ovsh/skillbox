@@ -106,3 +106,34 @@ struct FrontmatterTests {
         #expect(meta.description.isEmpty)
     }
 }
+
+@Suite("Frontmatter block scalars")
+struct FrontmatterBlockScalarTests {
+    @Test("Literal block scalar (|) keeps lines; folded (>) joins them")
+    func blockScalars() {
+        let content = """
+        ---
+        name: improve
+        description: |
+          Act as a rigorous reviewer.
+          Optimize for delivery.
+        when_to_use: >
+          When code quality
+          matters.
+        model: inherit
+        ---
+        Body
+        """
+        let fields = Frontmatter.parseAllFields(content)
+        #expect(fields["name"] == "improve")
+        #expect(fields["description"] == "Act as a rigorous reviewer.\nOptimize for delivery.")
+        #expect(fields["when_to_use"] == "When code quality matters.")
+        #expect(fields["model"] == "inherit")
+    }
+
+    @Test("Block scalar at end of frontmatter stops at the fence")
+    func blockAtFenceEnd() {
+        let fields = Frontmatter.parseAllFields("---\ndescription: |\n  Line one.\n---\n# Title")
+        #expect(fields["description"] == "Line one.")
+    }
+}

@@ -135,14 +135,17 @@ Sources/Skillbox/
 
 ## 7. Verification
 
-1. `swift test` — engine + new inventory/activator/prompt tests green.
+1. `swift test` — engine + new inventory/overrides/shelf/prompt tests green.
 2. Package + launch; menu bar and library render with real skills from this Mac.
-3. Toggle a skill off → folder moves to shelf; Claude Code session no longer
-   lists it; toggle on → restored. (Verified on a scratch skill, not user data.)
-4. Prompt edit round-trip: edit CLAUDE.md in app → file on disk updated (backup
-   `.bak` written before first save of a session).
-5. codex computer-use E2E: drive the packaged app, screenshot library, prompts
-   editor, toggle flow; written pass/fail report + screenshots.
+3. Claude toggle: switch a scratch skill off → `skillOverrides` in
+   ~/.claude/settings.json gains `"<skill>": "off"`, folder untouched; switch
+   on → entry removed. All other settings keys byte-identical.
+4. Shelf toggle (non-Claude tool, scratch dir): folder moves to the shelf and
+   restores losslessly; symlinked skills refuse with a clear message.
+5. Prompt edit round-trip: edit in app → disk updated; concurrent external
+   edit raises the conflict banner instead of clobbering.
+6. codex computer-use E2E: drive the packaged app, screenshot library, prompts
+   editor, toggle flow (scratch skill only); written pass/fail report.
 
 ---
 

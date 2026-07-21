@@ -86,14 +86,19 @@ struct SkillRow: View {
 
             RelativeDateText(date: skill.touchedAt)
 
-            AccentToggle(isOn: library.isActiveForClaude(skill)) { newValue in
-                library.setActive(skill, newValue)
+            if library.isClaudeAvailable(skill) {
+                AccentToggle(isOn: library.isActiveForClaude(skill)) { newValue in
+                    library.setActive(skill, newValue)
+                }
+                .disabled(!library.canToggleClaude(skill))
+                .help("Active for Claude Code & Agent SDK")
+            } else {
+                Chip(text: "Not in Claude", tint: Theme.inkTertiary)
+                    .help("No live copy in ~/.claude/skills — Claude Code can't load it.")
             }
-            .disabled(library.mutatingSkillIDs.contains(skill.id))
-            .help("Active for Claude Code & Agent SDK")
         }
         .rowChrome(isSelected: isSelected)
-        .opacity(library.isActiveForClaude(skill) ? 1 : 0.55)
+        .opacity(!library.isClaudeAvailable(skill) || library.isActiveForClaude(skill) ? 1 : 0.55)
         .animation(Theme.spring, value: library.isActiveForClaude(skill))
     }
 }
