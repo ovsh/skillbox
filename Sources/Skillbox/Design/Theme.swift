@@ -34,8 +34,8 @@ enum Theme {
     static let live = Color(light: .init(hex: 0x3E8B55), dark: .init(hex: 0x58A56E))
     /// The one accent — terracotta. Off segment, dirty text, selection tint.
     static let accent = Color(light: .init(hex: 0xC2593A), dark: .init(hex: 0xD4795A))
-    /// Switch ON track — dark graphite, not accent. The knob carries the read.
-    static let switchOn = Color(light: .init(hex: 0x3E4148), dark: .init(hex: 0x565B64))
+    /// Switch ON track — muted green, quieter than the status dot. Never accent.
+    static let switchOn = Color(light: .init(hex: 0x47804F), dark: .init(hex: 0x4C7F5F))
     /// Destructive hover tint.
     static let danger = Color(light: .init(hex: 0xC94F42), dark: .init(hex: 0xE5695A))
 

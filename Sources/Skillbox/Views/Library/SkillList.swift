@@ -38,10 +38,11 @@ struct SkillList: View {
                         ForEach(visibleSkills) { skill in
                             SkillRow(
                                 skill: skill,
-                                isSelected: selectedSkillIDs.contains(skill.id)
-                            ) {
-                                handleClick(on: skill)
-                            }
+                                isSelected: selectedSkillIDs.contains(skill.id),
+                                multiSelectActive: selectedSkillIDs.count > 1,
+                                select: { handleClick(on: skill) },
+                                toggleChecked: { toggleMembership(of: skill) }
+                            )
                         }
                     }
                     .padding(.horizontal, 8)
@@ -51,6 +52,17 @@ struct SkillList: View {
             }
         }
         .background(Theme.canvas)
+    }
+
+    /// Checkbox path into the same selection set: toggling never collapses
+    /// what's already selected.
+    private func toggleMembership(of skill: InstalledSkill) {
+        if selectedSkillIDs.contains(skill.id) {
+            selectedSkillIDs.remove(skill.id)
+        } else {
+            selectedSkillIDs.insert(skill.id)
+            anchorSkillID = skill.id
+        }
     }
 
     /// Finder-style selection: plain click focuses one skill, ⌘-click toggles
@@ -136,12 +148,19 @@ struct SkillRow: View {
     @Environment(SkillLibraryModel.self) private var library
     let skill: InstalledSkill
     let isSelected: Bool
+    let multiSelectActive: Bool
     let select: () -> Void
+    let toggleChecked: () -> Void
     @State private var isHovered = false
 
     var body: some View {
         Button(action: select) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                GraphiteCheckbox(
+                    isOn: isSelected,
+                    isVisible: isHovered || multiSelectActive,
+                    action: toggleChecked
+                )
                 if library.isClaudeAvailable(skill) {
                     MorphToggle(
                         isOn: library.isActiveForClaude(skill),

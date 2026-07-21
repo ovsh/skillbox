@@ -164,6 +164,40 @@ struct QuietButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Graphite checkbox
+
+/// 14pt square checkbox for multi-select. Lives in a reserved row slot and
+/// fades in on hover so selection is discoverable without ⌘-click knowledge.
+struct GraphiteCheckbox: View {
+    let isOn: Bool
+    let isVisible: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            RoundedRectangle(cornerRadius: 3.5)
+                .fill(isOn ? Theme.ink : .clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3.5)
+                        .strokeBorder(isOn ? Theme.ink : Theme.inkTertiary, lineWidth: 1)
+                )
+                .overlay {
+                    if isOn {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 8.5, weight: .bold))
+                            .foregroundStyle(Theme.canvas)
+                    }
+                }
+                .frame(width: 14, height: 14)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .opacity(isVisible || isOn ? 1 : 0)
+        .animation(Theme.fade, value: isVisible || isOn)
+        .accessibilityLabel(isOn ? "Deselect skill" : "Select skill")
+    }
+}
+
 // MARK: - Morph toggle (Graphite signature)
 
 /// A status dot that crossfades into a switch while its row is hovered —

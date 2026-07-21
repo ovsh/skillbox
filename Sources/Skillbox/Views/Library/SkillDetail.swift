@@ -29,7 +29,6 @@ struct SkillDetail: View {
                     .padding(.top, 20)
             }
             .padding(EdgeInsets(top: 24, leading: 28, bottom: 40, trailing: 28))
-            .frame(maxWidth: 680, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Theme.canvas)
