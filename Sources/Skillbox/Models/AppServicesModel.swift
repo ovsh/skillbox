@@ -23,10 +23,13 @@ final class AppServicesModel {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 
+    private var backgroundTask: Task<Void, Never>?
+
     /// Kicks off the initial + recurring update checks (4h cadence).
+    /// Idempotent — window reopens must not stack loops.
     func startBackgroundWork() {
-        guard !backgroundJobsDisabled else { return }
-        Task {
+        guard !backgroundJobsDisabled, backgroundTask == nil else { return }
+        backgroundTask = Task {
             try? await Task.sleep(for: .seconds(5))
             while !Task.isCancelled {
                 checkForUpdate()

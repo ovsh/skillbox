@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 public struct SkillToolPresence: Hashable, Sendable {
@@ -5,6 +6,8 @@ public struct SkillToolPresence: Hashable, Sendable {
     /// Absolute live or shelf directory path.
     public let path: String
     public let isShelved: Bool
+    public let isSymlink: Bool
+    public let isBroken: Bool
 }
 
 public struct InstalledSkill: Identifiable, Sendable {
@@ -104,41 +107,133 @@ public struct SkillInventoryScanner: Sendable {
         isShelved: Bool,
         to grouped: inout [String: [PresenceSnapshot]]
     ) {
-        let keys: Set<URLResourceKey> = [
-            .isDirectoryKey,
-            .creationDateKey,
-            .contentModificationDateKey,
-        ]
         guard let entries = try? FileManager.default.contentsOfDirectory(
             at: parent,
-            includingPropertiesForKeys: Array(keys),
+            includingPropertiesForKeys: [.isSymbolicLinkKey],
             options: [.skipsHiddenFiles]
         ) else { return }
 
         for entry in entries {
             let dirName = entry.lastPathComponent
             guard !dirName.hasPrefix("."),
-                  let values = try? entry.resourceValues(forKeys: keys),
-                  values.isDirectory == true else { continue }
-
-            let skillFile = entry.appendingPathComponent("SKILL.md")
-            let skillKeys: Set<URLResourceKey> = [.isRegularFileKey, .contentModificationDateKey]
-            let skillValues = try? skillFile.resourceValues(forKeys: skillKeys)
-            let readableSkillFile = skillValues?.isRegularFile == true ? skillFile : nil
-
-            let snapshot = PresenceSnapshot(
-                presence: SkillToolPresence(
+                  let snapshot = snapshot(
+                    for: entry,
                     targetID: targetID,
-                    path: entry.path,
                     isShelved: isShelved
-                ),
-                creationDate: values.creationDate,
-                directoryModifiedAt: values.contentModificationDate,
-                skillModifiedAt: skillValues?.contentModificationDate,
-                skillFile: readableSkillFile
-            )
+                  ) else { continue }
             grouped[dirName, default: []].append(snapshot)
         }
+    }
+
+    private func snapshot(
+        for entry: URL,
+        targetID: String,
+        isShelved: Bool
+    ) -> PresenceSnapshot? {
+        guard let entryInfo = fileInfo(at: entry, followingSymlinks: false) else { return nil }
+        let isSymlink = fileType(entryInfo.st_mode) == S_IFLNK
+
+        if isSymlink {
+            guard let rawTarget = try? FileManager.default.destinationOfSymbolicLink(
+                atPath: entry.path
+            ) else { return nil }
+            let target = resolvedTarget(rawTarget, for: entry)
+            guard let targetInfo = fileInfo(at: target, followingSymlinks: true) else {
+                guard errno == ENOENT || errno == ENOTDIR else { return nil }
+                return PresenceSnapshot(
+                    presence: SkillToolPresence(
+                        targetID: targetID,
+                        path: entry.path,
+                        isShelved: isShelved,
+                        isSymlink: true,
+                        isBroken: true
+                    ),
+                    creationDate: nil,
+                    directoryModifiedAt: nil,
+                    skillModifiedAt: nil,
+                    skillFile: nil,
+                    brokenLinkTarget: rawTarget
+                )
+            }
+            guard fileType(targetInfo.st_mode) == S_IFDIR else { return nil }
+            return readableSnapshot(
+                presencePath: entry.path,
+                metadataDirectory: target,
+                directoryInfo: targetInfo,
+                targetID: targetID,
+                isShelved: isShelved,
+                isSymlink: true
+            )
+        }
+
+        guard fileType(entryInfo.st_mode) == S_IFDIR else { return nil }
+        return readableSnapshot(
+            presencePath: entry.path,
+            metadataDirectory: entry,
+            directoryInfo: entryInfo,
+            targetID: targetID,
+            isShelved: isShelved,
+            isSymlink: false
+        )
+    }
+
+    private func readableSnapshot(
+        presencePath: String,
+        metadataDirectory: URL,
+        directoryInfo: stat,
+        targetID: String,
+        isShelved: Bool,
+        isSymlink: Bool
+    ) -> PresenceSnapshot {
+        let skillFile = metadataDirectory.appendingPathComponent("SKILL.md")
+        let skillInfo = fileInfo(at: skillFile, followingSymlinks: true)
+        let readableSkillFile = skillInfo.map { fileType($0.st_mode) == S_IFREG } == true
+            ? skillFile
+            : nil
+
+        return PresenceSnapshot(
+            presence: SkillToolPresence(
+                targetID: targetID,
+                path: presencePath,
+                isShelved: isShelved,
+                isSymlink: isSymlink,
+                isBroken: false
+            ),
+            creationDate: date(from: directoryInfo.st_birthtimespec),
+            directoryModifiedAt: date(from: directoryInfo.st_mtimespec),
+            skillModifiedAt: skillInfo.flatMap { date(from: $0.st_mtimespec) },
+            skillFile: readableSkillFile,
+            brokenLinkTarget: nil
+        )
+    }
+
+    private func fileInfo(at url: URL, followingSymlinks: Bool) -> stat? {
+        var info = stat()
+        let result = url.path.withCString { path in
+            followingSymlinks ? stat(path, &info) : lstat(path, &info)
+        }
+        return result == 0 ? info : nil
+    }
+
+    private func fileType(_ mode: mode_t) -> mode_t {
+        mode & S_IFMT
+    }
+
+    private func resolvedTarget(_ rawTarget: String, for link: URL) -> URL {
+        if rawTarget.hasPrefix("/") {
+            return URL(fileURLWithPath: rawTarget, isDirectory: true).standardizedFileURL
+        }
+        return link.deletingLastPathComponent()
+            .appendingPathComponent(rawTarget, isDirectory: true)
+            .standardizedFileURL
+    }
+
+    private func date(from timespec: timespec) -> Date? {
+        guard timespec.tv_sec > 0 else { return nil }
+        return Date(
+            timeIntervalSince1970: TimeInterval(timespec.tv_sec)
+                + TimeInterval(timespec.tv_nsec) / 1_000_000_000
+        )
     }
 
     private func metadata(
@@ -156,6 +251,9 @@ public struct SkillInventoryScanner: Sendable {
                 metadata.description,
                 fields
             )
+        }
+        if let rawTarget = candidates.compactMap(\.brokenLinkTarget).first {
+            return (dirName, "Broken link → \(rawTarget)", [:])
         }
         return (dirName, "", [:])
     }
@@ -180,4 +278,5 @@ private struct PresenceSnapshot {
     let directoryModifiedAt: Date?
     let skillModifiedAt: Date?
     let skillFile: URL?
+    let brokenLinkTarget: String?
 }

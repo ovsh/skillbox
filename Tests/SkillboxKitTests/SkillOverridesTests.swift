@@ -4,7 +4,7 @@ import Testing
 
 @Suite("ClaudeSettingsStore")
 struct SkillOverridesTests {
-    @Test("Mutating an override preserves every unrelated JSON value")
+    @Test("Mutating one override preserves unknown values on other skills")
     func preservesUnrelatedSettings() throws {
         let fixture = try Fixture(name: "overrides-preserve")
         defer { fixture.cleanup() }
@@ -25,7 +25,7 @@ struct SkillOverridesTests {
               "enabledPlugins": {"example@plugin": true},
               "skillOverrides": {
                 "known": "off",
-                "future": "future-state",
+                "future": "experimental-state",
                 "nonString": 42
               }
             }
@@ -34,18 +34,64 @@ struct SkillOverridesTests {
         let before = try jsonObject(at: settingsURL)
 
         let store = ClaudeSettingsStore(settingsFileURL: settingsURL)
-        try store.setOverride(.nameOnly, forSkill: "known")
+        try store.setOverride(.nameOnly, forSkill: "added")
 
         let after = try jsonObject(at: settingsURL)
         #expect(try jsonData(removingOverridesFrom: before) == jsonData(removingOverridesFrom: after))
 
         let rawOverrides = try #require(after["skillOverrides"] as? [String: Any])
-        #expect(rawOverrides["known"] as? String == "name-only")
-        #expect(rawOverrides["future"] as? String == "future-state")
+        #expect(rawOverrides["added"] as? String == "name-only")
+        #expect(rawOverrides["known"] as? String == "off")
+        #expect(rawOverrides["future"] as? String == "experimental-state")
         #expect(rawOverrides["nonString"] as? Int == 42)
 
         let typedOverrides = try store.overrides()
-        #expect(typedOverrides == ["known": .nameOnly])
+        #expect(typedOverrides == ["added": .nameOnly, "known": .off])
+    }
+
+    @Test("Raw-tree patch changes only the requested override leaf")
+    func rawTreeLeafPatch() throws {
+        let original = Data(
+            """
+            {
+              "env": {"MODE": "strict"},
+              "skillOverrides": {
+                "known": "off",
+                "future": "experimental-state"
+              }
+            }
+            """.utf8
+        )
+
+        let patched = try ClaudeSettingsPatcher.patch(
+            original,
+            state: .userInvocableOnly,
+            forSkill: "added",
+            path: "/tmp/settings.json"
+        )
+        let object = try #require(JSONSerialization.jsonObject(with: patched) as? [String: Any])
+        let overrides = try #require(object["skillOverrides"] as? [String: Any])
+
+        #expect((object["env"] as? [String: String]) == ["MODE": "strict"])
+        #expect(overrides["known"] as? String == "off")
+        #expect(overrides["future"] as? String == "experimental-state")
+        #expect(overrides["added"] as? String == "user-invocable-only")
+    }
+
+    @Test("Writes preserve 0600 settings permissions")
+    func preservesPrivatePermissions() throws {
+        let fixture = try Fixture(name: "overrides-permissions")
+        defer { fixture.cleanup() }
+
+        let settingsURL = try fixture.write(".claude/settings.json", "{\"env\": {}}")
+        #expect(chmod(settingsURL.path, 0o600) == 0)
+
+        try ClaudeSettingsStore(settingsFileURL: settingsURL)
+            .setOverride(.off, forSkill: "review")
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: settingsURL.path)
+        let permissions = try #require(attributes[.posixPermissions] as? NSNumber)
+        #expect(permissions.intValue == 0o600)
     }
 
     @Test("Set, clear, and set a different state")
@@ -118,19 +164,22 @@ struct SkillOverridesTests {
         let settingsURL = fixture.root.appendingPathComponent("missing/.claude/settings.json")
         let backupURL = settingsURL.appendingPathExtension("skillbox.bak")
         let store = ClaudeSettingsStore(settingsFileURL: settingsURL)
-        let copiedStore = store
+        let secondStore = ClaudeSettingsStore(settingsFileURL: settingsURL)
 
         #expect(try store.overrides().isEmpty)
         try store.setOverride(.off, forSkill: "review")
         #expect(FileManager.default.fileExists(atPath: settingsURL.path))
         #expect(!FileManager.default.fileExists(atPath: backupURL.path))
 
-        try copiedStore.setOverride(.nameOnly, forSkill: "review")
-        #expect(try copiedStore.overrides()["review"] == .nameOnly)
+        try secondStore.setOverride(.nameOnly, forSkill: "review")
+        #expect(try secondStore.overrides()["review"] == .nameOnly)
         #expect(!FileManager.default.fileExists(atPath: backupURL.path))
 
         let root = try jsonObject(at: settingsURL)
         #expect(Set(root.keys) == ["skillOverrides"])
+        let attributes = try FileManager.default.attributesOfItem(atPath: settingsURL.path)
+        let permissions = try #require(attributes[.posixPermissions] as? NSNumber)
+        #expect(permissions.intValue == 0o600)
     }
 
     @Test("An existing backup is never overwritten")

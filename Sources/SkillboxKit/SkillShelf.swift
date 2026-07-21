@@ -5,8 +5,10 @@ public enum SkillShelfError: LocalizedError, Sendable {
     case invalidDirectoryName(String)
     case sourceMissing(String)
     case sourceNotDirectory(String)
+    case symlinkedSkill
     case destinationExists(String)
     case crossVolume(source: String, destination: String)
+    case volumeUnavailable(String)
     case moveFailed(source: String, destination: String, reason: String)
 
     public var errorDescription: String? {
@@ -17,10 +19,14 @@ public enum SkillShelfError: LocalizedError, Sendable {
             return "Skill folder not found at \(path). Refresh the skill list and try again."
         case .sourceNotDirectory(let path):
             return "The item at \(path) is not a skill folder and cannot be moved."
+        case .symlinkedSkill:
+            return "Symlinked skills can't be shelved — toggle them for Claude instead."
         case .destinationExists(let path):
             return "A skill folder already exists at \(path). Move or rename it before trying again."
         case .crossVolume(let source, let destination):
             return "Cannot move \(source) to \(destination) because they are on different volumes."
+        case .volumeUnavailable(let path):
+            return "Could not determine the filesystem volume for \(path). The skill was not moved."
         case .moveFailed(let source, let destination, let reason):
             return "Could not move \(source) to \(destination): \(reason)."
         }
@@ -41,7 +47,12 @@ public struct SkillShelf: Sendable {
         let source = skillsDir.appendingPathComponent(dirName, isDirectory: true)
         let destination = targetDirectory(for: targetID)
             .appendingPathComponent(dirName, isDirectory: true)
-        try moveDirectory(from: source, to: destination)
+        try moveDirectory(
+            from: source,
+            to: destination,
+            refusesSymlink: true,
+            requiredVolumeRoot: rootDirectory
+        )
     }
 
     /// Restores a shelved skill without replacing an existing live folder.
@@ -50,7 +61,12 @@ public struct SkillShelf: Sendable {
         let source = targetDirectory(for: targetID)
             .appendingPathComponent(dirName, isDirectory: true)
         let destination = skillsDir.appendingPathComponent(dirName, isDirectory: true)
-        try moveDirectory(from: source, to: destination)
+        try moveDirectory(
+            from: source,
+            to: destination,
+            refusesSymlink: false,
+            requiredVolumeRoot: nil
+        )
     }
 
     /// Lists shelved directory names and their directory modification dates.
@@ -80,13 +96,33 @@ public struct SkillShelf: Sendable {
         }
     }
 
-    private func moveDirectory(from source: URL, to destination: URL) throws {
+    private func moveDirectory(
+        from source: URL,
+        to destination: URL,
+        refusesSymlink: Bool,
+        requiredVolumeRoot: URL?
+    ) throws {
         let fileManager = FileManager.default
-        var isDirectory: ObjCBool = false
-        guard fileManager.fileExists(atPath: source.path, isDirectory: &isDirectory) else {
+        var sourceInfo = stat()
+        let sourceResult = source.path.withCString { path in
+            lstat(path, &sourceInfo)
+        }
+        guard sourceResult == 0 else {
             throw SkillShelfError.sourceMissing(source.path)
         }
-        guard isDirectory.boolValue else {
+        let sourceType = sourceInfo.st_mode & S_IFMT
+        if refusesSymlink, sourceType == S_IFLNK {
+            throw SkillShelfError.symlinkedSkill
+        }
+
+        var isDirectory = sourceType == S_IFDIR
+        if sourceType == S_IFLNK {
+            var targetInfo = stat()
+            isDirectory = source.path.withCString { path in
+                stat(path, &targetInfo)
+            } == 0 && (targetInfo.st_mode & S_IFMT) == S_IFDIR
+        }
+        guard isDirectory else {
             throw SkillShelfError.sourceNotDirectory(source.path)
         }
         if fileManager.fileExists(atPath: destination.path) {
@@ -97,6 +133,9 @@ public struct SkillShelf: Sendable {
             at: destination.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
+        if let requiredVolumeRoot {
+            try ensureSameVolume(source: source, root: requiredVolumeRoot)
+        }
 
         let result = source.path.withCString { sourcePath in
             destination.path.withCString { destinationPath in
@@ -122,6 +161,45 @@ public struct SkillShelf: Sendable {
                     reason: reason
                 )
             }
+        }
+    }
+
+    private func ensureSameVolume(source: URL, root: URL) throws {
+        let sourceVolume: NSObject
+        let rootVolume: NSObject
+        do {
+            guard let value = try source.resourceValues(
+                forKeys: [.volumeIdentifierKey]
+            ).volumeIdentifier else {
+                throw SkillShelfError.volumeUnavailable(source.path)
+            }
+            guard let object = value as? NSObject else {
+                throw SkillShelfError.volumeUnavailable(source.path)
+            }
+            sourceVolume = object
+        } catch let error as SkillShelfError {
+            throw error
+        } catch {
+            throw SkillShelfError.volumeUnavailable(source.path)
+        }
+        do {
+            guard let value = try root.resourceValues(
+                forKeys: [.volumeIdentifierKey]
+            ).volumeIdentifier else {
+                throw SkillShelfError.volumeUnavailable(root.path)
+            }
+            guard let object = value as? NSObject else {
+                throw SkillShelfError.volumeUnavailable(root.path)
+            }
+            rootVolume = object
+        } catch let error as SkillShelfError {
+            throw error
+        } catch {
+            throw SkillShelfError.volumeUnavailable(root.path)
+        }
+
+        guard sourceVolume.isEqual(rootVolume) else {
+            throw SkillShelfError.crossVolume(source: source.path, destination: root.path)
         }
     }
 }

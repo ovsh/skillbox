@@ -180,4 +180,74 @@ struct SkillInventoryTests {
         #expect(skill.name == "Local")
         #expect(skill.claudeOverride == nil)
     }
+
+    @Test("Plain directories, relative symlinks, and broken symlinks are classified")
+    func symlinkClassification() throws {
+        let fixture = try Fixture(name: "inventory-symlinks")
+        defer { fixture.cleanup() }
+
+        let targetDirectory = fixture.root.appendingPathComponent("targets/linked")
+        try fixture.write(
+            "targets/linked/SKILL.md",
+            skillMarkdown(name: "Linked metadata", description: "Read through target")
+        )
+        try fixture.write(
+            ".claude/skills/plain/SKILL.md",
+            skillMarkdown(name: "Plain metadata", description: "Plain directory")
+        )
+        let skillsDirectory = fixture.root.appendingPathComponent(".claude/skills")
+        try FileManager.default.createSymbolicLink(
+            atPath: skillsDirectory.appendingPathComponent("linked").path,
+            withDestinationPath: "../../targets/linked"
+        )
+        try FileManager.default.createSymbolicLink(
+            atPath: skillsDirectory.appendingPathComponent("broken").path,
+            withDestinationPath: "../../targets/missing"
+        )
+        let expectedTargetCreatedAt = try targetDirectory.resourceValues(
+            forKeys: [.creationDateKey]
+        ).creationDate
+
+        let skills = SkillInventoryScanner(
+            registry: testRegistry(),
+            shelf: SkillShelf(rootDirectory: fixture.root.appendingPathComponent("shelf")),
+            settingsStore: ClaudeSettingsStore(
+                settingsFileURL: fixture.root.appendingPathComponent(".claude/settings.json")
+            ),
+            lockfileStore: LockfileStore(
+                directory: fixture.root.appendingPathComponent("app-support")
+            )
+        ).scan(home: fixture.root)
+
+        #expect(Set(skills.map(\.dirName)) == ["plain", "linked", "broken"])
+
+        let plain = try #require(skills.first { $0.dirName == "plain" })
+        let plainPresence = try #require(plain.presences.first)
+        #expect(!plainPresence.isSymlink)
+        #expect(!plainPresence.isBroken)
+
+        let linked = try #require(skills.first { $0.dirName == "linked" })
+        let linkedPresence = try #require(linked.presences.first)
+        #expect(linked.name == "Linked metadata")
+        #expect(linked.description == "Read through target")
+        #expect(linkedPresence.isSymlink)
+        #expect(!linkedPresence.isBroken)
+        #expect(
+            try FileManager.default.destinationOfSymbolicLink(atPath: linkedPresence.path)
+                == "../../targets/linked"
+        )
+        let linkedAddedAt = try #require(linked.addedAt)
+        let targetCreatedAt = try #require(expectedTargetCreatedAt)
+        #expect(abs(linkedAddedAt.timeIntervalSince(targetCreatedAt)) < 0.000_001)
+        #expect(linked.touchedAt != nil)
+
+        let broken = try #require(skills.first { $0.dirName == "broken" })
+        let brokenPresence = try #require(broken.presences.first)
+        #expect(broken.name == "broken")
+        #expect(broken.description == "Broken link → ../../targets/missing")
+        #expect(brokenPresence.isSymlink)
+        #expect(brokenPresence.isBroken)
+        #expect(broken.addedAt == nil)
+        #expect(broken.touchedAt == nil)
+    }
 }

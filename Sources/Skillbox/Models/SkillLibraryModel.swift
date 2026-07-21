@@ -17,6 +17,10 @@ final class SkillLibraryModel {
     /// Skills with a mutation in flight — their controls disable until the
     /// post-mutation re-scan publishes disk truth.
     private(set) var mutatingSkillIDs: Set<String> = []
+    /// Optimistic Claude-active state, keyed by skill id, shown while the
+    /// write + re-scan round-trips so switches respond instantly instead of
+    /// snapping back for a frame. Cleared when disk truth publishes.
+    private var optimisticActive: [String: Bool] = [:]
 
     var searchText = ""
 
@@ -86,7 +90,7 @@ final class SkillLibraryModel {
 
     /// "Active" in the primary sense: Claude Code + Agent SDK will invoke it.
     func isActiveForClaude(_ skill: InstalledSkill) -> Bool {
-        (skill.claudeOverride ?? .on) != .off
+        optimisticActive[skill.id] ?? ((skill.claudeOverride ?? .on) != .off)
     }
 
     // MARK: - Refresh
@@ -111,6 +115,10 @@ final class SkillLibraryModel {
                 if self.refreshQueuedWhileBusy {
                     self.refreshQueuedWhileBusy = false
                     self.refresh()
+                } else if self.mutatingSkillIDs.isEmpty {
+                    // Disk truth is current and no writes are in flight —
+                    // optimistic states have served their purpose.
+                    self.optimisticActive.removeAll()
                 }
             }
         }
@@ -121,6 +129,7 @@ final class SkillLibraryModel {
     /// The list switch: on ↔ off via Claude's skillOverrides. Optimistic —
     /// the UI flips immediately; a scan follows to confirm reality.
     func setActive(_ skill: InstalledSkill, _ active: Bool) {
+        optimisticActive[skill.id] = active
         setClaudeOverride(skill, active ? nil : .off)
         Analytics.track(.skillToggled(skill: skill.dirName, enabled: active))
     }

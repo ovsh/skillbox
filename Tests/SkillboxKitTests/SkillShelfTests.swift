@@ -118,4 +118,47 @@ struct SkillShelfTests {
         #expect(entries.map(\.dirName) == ["alpha", "zebra"])
         #expect(entries.allSatisfy { $0.shelvedAt != nil })
     }
+
+    @Test("Shelving refuses valid and broken symlinks without moving them")
+    func symlinksAreUntouched() throws {
+        let fixture = try Fixture(name: "shelf-symlinks")
+        defer { fixture.cleanup() }
+
+        try fixture.write("targets/valid/SKILL.md", "target")
+        try fixture.mkdir("live")
+        let live = fixture.root.appendingPathComponent("live")
+        let links = [
+            (name: "valid-link", target: "../targets/valid"),
+            (name: "broken-link", target: "../targets/missing"),
+        ]
+        for link in links {
+            try FileManager.default.createSymbolicLink(
+                atPath: live.appendingPathComponent(link.name).path,
+                withDestinationPath: link.target
+            )
+        }
+
+        let shelf = SkillShelf(rootDirectory: fixture.root.appendingPathComponent("shelf"))
+        for link in links {
+            do {
+                try shelf.shelve(dirName: link.name, from: live, targetID: "agents")
+                Issue.record("Expected shelving \(link.name) to fail")
+            } catch let error as SkillShelfError {
+                guard case .symlinkedSkill = error else {
+                    Issue.record("Expected symlinkedSkill, got \(error)")
+                    continue
+                }
+                #expect(
+                    error.localizedDescription
+                        == "Symlinked skills can't be shelved — toggle them for Claude instead."
+                )
+            }
+
+            let rawTarget = try FileManager.default.destinationOfSymbolicLink(
+                atPath: live.appendingPathComponent(link.name).path
+            )
+            #expect(rawTarget == link.target)
+            #expect(!fixture.exists("shelf/agents/\(link.name)"))
+        }
+    }
 }

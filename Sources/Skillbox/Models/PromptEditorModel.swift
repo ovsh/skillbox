@@ -117,8 +117,13 @@ final class PromptEditorModel {
             isDirty = false
             lastSavedAt = Date()
             lastError = nil
-            // Creating a file flips its `exists`; refresh the list quietly.
-            if !file.exists { refresh() }
+            // Re-stat immediately so our own write isn't later mistaken for
+            // an external change (which would raise a false conflict).
+            files = store.discover()
+            selectedFile = files.first { $0.path == file.path } ?? selectedFile
+        } catch PromptFileError.changedOnDisk {
+            // The store's revision guard caught an edit we hadn't seen.
+            hasDiskConflict = true
         } catch {
             lastError = error.localizedDescription
         }

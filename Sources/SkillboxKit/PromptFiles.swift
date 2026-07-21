@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 public struct PromptFile: Identifiable, Hashable, Sendable {
@@ -8,6 +7,17 @@ public struct PromptFile: Identifiable, Hashable, Sendable {
     public let path: String
     public let exists: Bool
     public let modifiedAt: Date?
+}
+
+public enum PromptFileError: LocalizedError, Sendable {
+    case changedOnDisk(path: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .changedOnDisk(let path):
+            return "The prompt file at \(path) changed on disk. Reload it before saving."
+        }
+    }
 }
 
 /// Discovers and safely edits global agent prompt files.
@@ -47,16 +57,14 @@ public struct PromptFileStore: Sendable {
 
         return candidates.compactMap { candidate in
             let url = home.appendingPathComponent(candidate.relativePath)
-            let exists = FileManager.default.fileExists(atPath: url.path)
+            let state = try? POSIXFile.state(at: url)
+            let exists = state?.exists == true
             guard candidate.alwaysInclude || exists else { return nil }
-            let modifiedAt = try? url.resourceValues(
-                forKeys: [.contentModificationDateKey]
-            ).contentModificationDate
             return PromptFile(
                 displayName: candidate.displayName,
                 path: url.path,
                 exists: exists,
-                modifiedAt: modifiedAt
+                modifiedAt: state?.modifiedAt
             )
         }
     }
@@ -65,20 +73,67 @@ public struct PromptFileStore: Sendable {
         try String(contentsOfFile: file.path, encoding: .utf8)
     }
 
-    /// Writes atomically and preserves the original file in a non-overwriting
-    /// sibling backup before this process first changes that path.
-    public func write(_ content: String, to file: PromptFile) throws {
+    /// Writes only when the current revision matches `expectedModifiedAt`.
+    /// A nil expectation requires the file to be absent. Existing modes and
+    /// the first pre-write contents are preserved.
+    public func write(
+        _ content: String,
+        to file: PromptFile,
+        expectedModifiedAt: Date?
+    ) throws {
         let destination = URL(fileURLWithPath: file.path)
         let data = Data(content.utf8)
         try Self.backupLedger.withPath(file.path) { isFirstWrite in
+            let initialState = try POSIXFile.state(at: destination)
+            try validate(
+                initialState,
+                expectedModifiedAt: expectedModifiedAt,
+                path: file.path
+            )
+
             let fileManager = FileManager.default
-            if isFirstWrite, fileManager.fileExists(atPath: destination.path) {
-                let backup = destination.appendingPathExtension("skillbox.bak")
-                if !fileManager.fileExists(atPath: backup.path) {
-                    try fileManager.copyItem(at: destination, to: backup)
+            try AtomicFileWriter.write(
+                data,
+                to: destination,
+                permissions: initialState.permissions
+            ) {
+                let currentState = try POSIXFile.state(at: destination)
+                guard currentState.contentRevision == initialState.contentRevision else {
+                    throw PromptFileError.changedOnDisk(path: file.path)
                 }
+                if isFirstWrite, initialState.exists {
+                    let backup = destination.appendingPathExtension("skillbox.bak")
+                    if !fileManager.fileExists(atPath: backup.path) {
+                        try fileManager.copyItem(at: destination, to: backup)
+                    }
+                }
+                return true
             }
-            try PromptAtomicWriter.write(data, to: destination)
+        }
+    }
+
+    @available(
+        *,
+        deprecated,
+        message: "Use write(_:to:expectedModifiedAt:) to guard against stale revisions."
+    )
+    public func write(_ content: String, to file: PromptFile) throws {
+        try write(content, to: file, expectedModifiedAt: file.modifiedAt)
+    }
+
+    private func validate(
+        _ state: FileState,
+        expectedModifiedAt: Date?,
+        path: String
+    ) throws {
+        switch (state, expectedModifiedAt) {
+        case (.missing, nil):
+            return
+        case (.present(let snapshot), .some(let expected))
+            where snapshot.modifiedAt == expected:
+            return
+        default:
+            throw PromptFileError.changedOnDisk(path: path)
         }
     }
 }
@@ -100,28 +155,5 @@ private final class PromptBackupLedger: @unchecked Sendable {
         let result = try operation(isFirstWrite)
         writtenPaths.insert(path)
         return result
-    }
-}
-
-private enum PromptAtomicWriter {
-    static func write(_ data: Data, to destination: URL) throws {
-        let fileManager = FileManager.default
-        let parent = destination.deletingLastPathComponent()
-        try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
-
-        let temporary = parent.appendingPathComponent(
-            ".\(destination.lastPathComponent).skillbox-\(UUID().uuidString).tmp"
-        )
-        defer { try? fileManager.removeItem(at: temporary) }
-        try data.write(to: temporary)
-
-        let result = temporary.path.withCString { source in
-            destination.path.withCString { target in
-                Darwin.rename(source, target)
-            }
-        }
-        guard result == 0 else {
-            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
-        }
     }
 }

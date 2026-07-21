@@ -132,24 +132,35 @@ struct EmptyState: View {
 // MARK: - Quiet button style
 
 /// Text button that only reveals chrome on hover — for secondary actions.
+/// Hover state lives in an inner View: @State inside a ButtonStyle struct has
+/// no view identity and silently never updates.
 struct QuietButtonStyle: ButtonStyle {
     var role: Role = .normal
-    @State private var isHovered = false
 
     enum Role { case normal, destructive }
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(Theme.secondary)
-            .foregroundStyle(
-                role == .destructive && isHovered ? .red : (isHovered ? Theme.ink : Theme.inkSecondary)
-            )
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isHovered ? Theme.hover : .clear, in: .rect(cornerRadius: 5))
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(Theme.fade, value: configuration.isPressed)
-            .onHover { isHovered = $0 }
+        QuietButtonBody(role: role, configuration: configuration)
+    }
+
+    private struct QuietButtonBody: View {
+        let role: Role
+        let configuration: Configuration
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .font(Theme.secondary)
+                .foregroundStyle(
+                    role == .destructive && isHovered ? .red : (isHovered ? Theme.ink : Theme.inkSecondary)
+                )
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(isHovered ? Theme.hover : .clear, in: .rect(cornerRadius: 5))
+                .scaleEffect(configuration.isPressed ? 0.97 : 1)
+                .animation(Theme.fade, value: configuration.isPressed)
+                .onHover { isHovered = $0 }
+        }
     }
 }
 

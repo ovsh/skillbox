@@ -103,17 +103,25 @@ struct SkillDetail: View {
                     VStack(alignment: .leading, spacing: 8) {
                         SectionLabel(text: "Other Tools")
                         ForEach(otherPresences, id: \.self) { presence in
-                            HStack {
+                            HStack(spacing: 8) {
                                 Text(library.toolDisplayName(presence.targetID))
                                     .font(Theme.body)
                                     .foregroundStyle(Theme.ink)
+                                if presence.isBroken {
+                                    Chip(text: "Broken link", tint: .red)
+                                } else if presence.isSymlink {
+                                    Chip(text: "Symlinked", tint: Theme.inkSecondary)
+                                }
                                 Spacer()
                                 AccentToggle(isOn: !presence.isShelved) { enabled in
                                     library.setToolPresence(skill, targetID: presence.targetID, enabled: enabled)
                                 }
+                                // Links are never moved — shelving one would
+                                // break its relative target resolution.
+                                .disabled(presence.isSymlink || presence.isBroken)
                             }
                         }
-                        Text("Off moves the folder to Skillbox's shelf; the tool stops seeing it. On restores it exactly as it was.")
+                        Text("Off moves the folder to Skillbox's shelf; the tool stops seeing it. On restores it exactly as it was. Symlinked skills can't be shelved — control them with the Claude switch instead.")
                             .font(Theme.meta)
                             .foregroundStyle(Theme.inkTertiary)
                     }
