@@ -47,7 +47,6 @@ struct SkillList: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 10)
-                    .animation(Theme.spring, value: visibleSkills.map(\.id))
                 }
             }
         }
@@ -153,59 +152,66 @@ struct SkillRow: View {
     let toggleChecked: () -> Void
     @State private var isHovered = false
 
+    // Interactive controls are SIBLINGS of the select button — never nested
+    // inside it, so a checkbox click can never also dispatch row selection
+    // and the detail/bulk panes never churn on membership changes.
     var body: some View {
-        Button(action: select) {
-            HStack(spacing: 8) {
-                GraphiteCheckbox(
-                    isOn: isSelected,
-                    isVisible: isHovered || multiSelectActive,
-                    action: toggleChecked
-                )
-                if library.isClaudeAvailable(skill) {
-                    MorphToggle(
-                        isOn: library.isActiveForClaude(skill),
-                        isHovered: isHovered,
-                        isEnabled: library.canToggleClaude(skill)
-                    ) { newValue in
-                        library.setActive(skill, newValue)
-                    }
-                } else {
-                    // Not loadable by Claude: a hollow dot that never morphs.
-                    StatusDot(isOn: false)
-                        .frame(width: 34, height: 20)
-                        .help("No live copy in ~/.claude/skills")
-                        .opacity(0.5)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(skill.name)
-                        .font(Theme.bodyMedium)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                    Text(skill.description.isEmpty ? skill.dirName : skill.description)
-                        .font(Theme.secondary)
-                        .foregroundStyle(Theme.inkSecondary)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                RelativeDateText(date: skill.touchedAt)
-            }
-            .opacity(rowOpacity)
-            .padding(.horizontal, 10)
-            .frame(height: Theme.rowHeight)
-            .background(
-                isSelected ? Theme.selection : (isHovered ? Theme.hover : .clear),
-                in: .rect(cornerRadius: Theme.radiusSmall)
+        HStack(spacing: 8) {
+            GraphiteCheckbox(
+                isOn: isSelected,
+                isVisible: isHovered || multiSelectActive,
+                action: toggleChecked
             )
-            .contentShape(.rect(cornerRadius: Theme.radiusSmall))
+
+            if library.isClaudeAvailable(skill) {
+                MorphToggle(
+                    isOn: library.isActiveForClaude(skill),
+                    isHovered: isHovered,
+                    isEnabled: library.canToggleClaude(skill)
+                ) { newValue in
+                    library.setActive(skill, newValue)
+                }
+            } else {
+                // Not loadable by Claude: a hollow dot that never morphs.
+                StatusDot(isOn: false)
+                    .frame(width: 34, height: 20)
+                    .help("No live copy in ~/.claude/skills")
+                    .opacity(0.5)
+            }
+
+            Button(action: select) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(skill.name)
+                            .font(Theme.bodyMedium)
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1)
+                        Text(skill.description.isEmpty ? skill.dirName : skill.description)
+                            .font(Theme.secondary)
+                            .foregroundStyle(Theme.inkSecondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    RelativeDateText(date: skill.touchedAt)
+                }
+                // Fill the row's full 44pt height so clicks in the row's
+                // vertical padding still select.
+                .frame(maxHeight: .infinity)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .opacity(rowOpacity)
+        .animation(Theme.fade, value: rowOpacity)
+        .padding(.horizontal, 10)
+        .frame(height: Theme.rowHeight)
+        .background(
+            isSelected ? Theme.selection : (isHovered ? Theme.hover : .clear),
+            in: .rect(cornerRadius: Theme.radiusSmall)
+        )
         .onHover { hovering in
             withAnimation(Theme.fade) { isHovered = hovering }
         }
-        .animation(Theme.spring, value: library.isActiveForClaude(skill))
     }
 
     private var rowOpacity: Double {

@@ -99,8 +99,11 @@ final class SkillLibraryModel {
             .map { $0 }
     }
 
+    private var skillIndex: [String: Int] = [:]
+
     func skill(withID id: String) -> InstalledSkill? {
-        skills.first { $0.id == id }
+        guard let index = skillIndex[id], skills.indices.contains(index) else { return nil }
+        return skills[index]
     }
 
     /// "Active" in the primary sense: Claude Code + Agent SDK will invoke it.
@@ -131,6 +134,9 @@ final class SkillLibraryModel {
             let overridesReadable = (try? settingsStore.overrides()) != nil
             await MainActor.run {
                 self.skills = result
+                self.skillIndex = Dictionary(
+                    uniqueKeysWithValues: result.enumerated().map { ($0.element.id, $0.offset) }
+                )
                 self.overridesUnreadable = !overridesReadable
                 self.isRefreshing = false
                 self.rebuildSkillDirWatchers()

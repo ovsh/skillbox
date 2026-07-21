@@ -62,7 +62,11 @@ struct LibraryWindow: View {
 
     @ViewBuilder
     private var skillDetail: some View {
-        let selected = selectedSkillIDs.compactMap { library.skill(withID: $0) }
+        // Sort for deterministic display — Set iteration order isn't stable
+        // across renders, and the bulk pane's list must not shuffle.
+        let selected = selectedSkillIDs
+            .compactMap { library.skill(withID: $0) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         if selected.count > 1 {
             BulkActionsPane(skills: selected) {
                 selectedSkillIDs.removeAll()
