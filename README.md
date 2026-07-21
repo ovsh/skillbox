@@ -1,121 +1,58 @@
 # Skillbox
 
-Menu-bar macOS skill manager for AI coding tools. Connect a GitHub registry repo, browse its skills, and toggle each one on or off — Skillbox installs them into every tool on your Mac and keeps them in sync.
-
-Skillbox is the ground-up rewrite of Hypersync, rebuilt around skills as the primary object instead of repo syncing.
-
-## Install
-
-1. Download **Skillbox-MacOS.zip** from the [latest release](../../releases/latest)
-2. Unzip and move **Skillbox.app** to `/Applications`
-3. Open Skillbox — it lives in your menu bar
-4. Connect an existing registry or **one-click create** one from the template, then pick your skills
+Menu-bar macOS skill manager for your AI coding tools. See every skill installed on your Mac, flip each one on or off for Claude Code and the Agent SDK, and edit your global agent prompts (CLAUDE.md, AGENTS.md) inline — in an always-on, quiet little app.
 
 > Requires macOS 14+.
 
-## What it manages
+## What it does
 
-Skillbox discovers `skills/` and `rules/` directories in your registry repo and installs them into every detected tool:
+- **Library** — every skill across `~/.claude/skills`, `~/.agents/skills`, `~/.cursor/skills`, and `~/.config/opencode/skills` in one list, with when it was added, when it last changed, and which tools see it.
+- **One switch per skill** — writes Claude Code's sanctioned `skillOverrides` map in `~/.claude/settings.json` (`on` / `name-only` / `user-invocable-only` / `off`). Claude Code file-watches it, so toggles apply to live sessions, and it governs Agent SDK apps too. The skill's folder never moves.
+- **Per-tool shelving** — tools without an override map (Cursor, the agents dir, OpenCode) get per-tool switches that move the folder to Skillbox's shelf and restore it losslessly. Symlinked skills are never moved.
+- **Prompt editor** — `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` editable in place, with autosave that never clobbers concurrent on-disk edits.
+- **Always current** — directory watchers keep the library and menu bar in sync with whatever your tools or a `git pull` do to your skills.
 
-| Tool | Skills | Rules | Detected via |
-|------|:------:|:-----:|---|
-| Agents standard (Codex, Windsurf, Gemini CLI, …) | `~/.agents/skills` | — | always on |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `~/.claude/skills` | `~/.claude/rules` | `~/.claude` |
-| [Cursor](https://cursor.sh) | `~/.cursor/skills` | `~/.cursor/rules` | `~/.cursor` |
-| [OpenCode](https://opencode.ai) | `~/.config/opencode/skills` | — | `~/.config/opencode` |
-
-Need another tool? Add a `Target` to `Sources/SkillboxKit/Targets.swift`.
-
-## How it differs from a plain sync
-
-Every file Skillbox writes is recorded in a **lockfile**. That's what makes it a manager rather than a copier:
-
-- **Per-skill toggles** — flip any skill on/off; off means its files are removed from every tool on the next sync
-- **Clean uninstalls & pruning** — skills deleted or renamed in the registry are removed locally, including emptied directories
-- **Local skills stay untouched** — anything Skillbox didn't install, it never deletes
-- **Playground opt-in** — skills under `playground/skills/` are off by default, per-person opt-in
-- **Tool auto-detection** — files only go to tools that exist on the machine (overridable per tool in Settings)
-
-## Registry layout
-
-Either top-level `skills/` + `rules/`, or space folders (any top-level directory containing them):
-
-```
-everyone/
-  skills/<skill-name>/SKILL.md
-  rules/*.md
-  playground/skills/<skill-name>/SKILL.md
-engineering/
-  skills/…
-```
-
-Optional `space.yaml` per space provides `name:` and `description:`. See [skillbox-template](skillbox-template/) for a starter registry.
-
-## Features
-
-- **Skills browser** — three-pane window: spaces, skill list with install switches, markdown detail
-- **One-click sync** from the menu bar; toggles auto-sync after a short debounce
-- **Auto sync** on a configurable interval
-- **Onboarding wizard** — GitHub CLI install/auth flow, create-from-template or connect existing
-- **Setup check** — diagnoses git/SSH/credential problems with actionable fixes
-- **Auto-update** — checks GitHub Releases and self-updates in place
-- **Launch at login** (on by default; toggle in Settings)
+Safety posture: Skillbox backs up `settings.json` before its first write, patches only the one key it owns, preserves file permissions, and never deletes or overwrites skill content — deactivation is always reversible.
 
 ## Building from source
 
 Requires Xcode 16+ (Swift 6) and macOS 14+.
 
 ```bash
-# Debug build + tests
-swift build
-swift test
+swift build && swift test
 
-# Release build + app bundle (ad-hoc signed, no notarization)
+# Release app bundle (ad-hoc signed, no notarization)
 CODESIGN_IDENTITY="-" SKIP_NOTARIZE=1 ./scripts/package_app.sh
 ```
 
-The app bundle lands at `dist/Skillbox.app`.
+The app bundle lands at `dist/Skillbox.app`. `./scripts/install_app.sh` installs to `~/Applications`.
 
-### Signed + notarized (for distribution)
-
-```bash
-# One-time: store notarization credentials
-xcrun notarytool store-credentials "Skillbox" \
-  --apple-id "YOUR_APPLE_ID" \
-  --team-id "YOUR_TEAM_ID" \
-  --password "YOUR_APP_SPECIFIC_PASSWORD"
-
-# Build, sign, notarize
-VERSION=0.1.0 ./scripts/package_app.sh
-```
-
-### Install locally
+### Releasing
 
 ```bash
-./scripts/install_app.sh
+./scripts/release.sh v0.2.0
 ```
 
-## Releasing
-
-```bash
-./scripts/release.sh v0.1.0
-```
-
-Tags the commit and pushes. GitHub Actions builds, signs, notarizes, and publishes a release with DMG + ZIP.
+GitHub Actions builds, signs, notarizes, and publishes DMG + ZIP. The app self-updates from GitHub Releases.
 
 ## Architecture
 
-- **SkillboxKit** — pure, UI-free engine: `GitClient` → `CatalogScanner` → `Planner` → `Installer`, with the lockfile (`LockfileStore`) as the source of truth for what's managed. Fully covered by `swift test`.
-- **Skillbox** (app) — SwiftUI menu bar app + browser/settings/onboarding windows over the Kit.
+- **SkillboxKit** — UI-free engine, fully covered by `swift test`:
+  `SkillInventoryScanner` (unified inventory incl. symlink handling) ·
+  `ClaudeSettingsStore` (fail-closed `skillOverrides` writer) ·
+  `SkillShelf` (lossless folder shelving) · `PromptFileStore` (revision-guarded prompt IO).
+  The registry-sync engine (git → catalog → plan → install) from v1 remains in
+  the Kit for a future team mode, with no UI in v2.
+- **Skillbox** (app) — SwiftUI menu bar app; `@Observable` models over the Kit;
+  "quiet desk" design system (warm paper neutrals, one terracotta accent).
 
 ## Data
 
 | Item | Path |
 |---|---|
-| Settings | `~/Library/Application Support/Skillbox/settings.json` |
-| Lockfile | `~/Library/Application Support/Skillbox/lockfile.json` |
+| Shelved skills | `~/Library/Application Support/Skillbox/shelf/<tool>/` |
+| Settings backup | `~/.claude/settings.json.skillbox.bak` (created once) |
 | Logs | `~/Library/Application Support/Skillbox/sync.log` |
-| Registry checkout | `~/Library/Application Support/Skillbox/registry` |
 
 ## License
 

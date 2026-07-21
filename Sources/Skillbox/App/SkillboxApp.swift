@@ -19,11 +19,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let env = ProcessInfo.processInfo.environment
-        let shouldSkipLoginItem = env["SKILLBOX_SKIP_LOGIN_ITEM"] == "1"
-        let shouldDisableAnalytics = env["SKILLBOX_DISABLE_ANALYTICS"] == "1"
 
         // Enable launch at login by default on first run unless explicitly disabled
-        if !shouldSkipLoginItem {
+        if env["SKILLBOX_SKIP_LOGIN_ITEM"] != "1" {
             let launchKey = "hasRegisteredLoginItem"
             if !UserDefaults.standard.bool(forKey: launchKey) {
                 try? SMAppService.mainApp.register()
@@ -31,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        if !shouldDisableAnalytics {
+        if env["SKILLBOX_DISABLE_ANALYTICS"] != "1" {
             Analytics.setup()
         }
 
@@ -54,11 +52,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 /// (unlike the popover content), so its `onAppear` reliably fires during
 /// startup. We use this to capture SwiftUI's `openWindow` action.
 private struct MenuBarLabel: View {
-    let iconName: String
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: iconName)
+        Image(systemName: "shippingbox")
             .onAppear {
                 WindowCoordinator.shared.register(openWindow: openWindow)
             }
@@ -69,28 +66,35 @@ private struct MenuBarLabel: View {
 
 struct SkillboxApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var appState = AppState()
+
+    @State private var library = SkillLibraryModel()
+    @State private var prompts = PromptEditorModel()
+    @State private var services = AppServicesModel()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuView()
-                .environmentObject(appState)
+            MenuPopover()
+                .environment(library)
         } label: {
-            MenuBarLabel(iconName: appState.menuIconName)
+            MenuBarLabel()
         }
         .menuBarExtraStyle(.window)
 
-        Window("Skillbox", id: "skills") {
-            BrowserView()
-                .environmentObject(appState)
+        Window("Skillbox", id: "library") {
+            LibraryWindow()
+                .environment(library)
+                .environment(prompts)
+                .task {
+                    services.startBackgroundWork()
+                }
         }
         .windowResizability(.contentMinSize)
-        .defaultSize(width: 960, height: 640)
+        .defaultSize(width: 980, height: 640)
         .windowStyle(.hiddenTitleBar)
 
         Window("Skillbox Settings", id: "settings") {
-            SettingsView()
-                .environmentObject(appState)
+            SettingsWindow()
+                .environment(services)
         }
         .windowResizability(.contentSize)
     }

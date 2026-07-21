@@ -8,15 +8,13 @@ final class WindowCoordinator {
     static let shared = WindowCoordinator()
 
     enum AppWindow: String, CaseIterable {
-        case skills
+        case library
         case settings
 
         var title: String {
             switch self {
-            case .skills:
-                return "Skillbox"
-            case .settings:
-                return "Skillbox Settings"
+            case .library: "Skillbox"
+            case .settings: "Skillbox Settings"
             }
         }
     }
@@ -35,7 +33,7 @@ final class WindowCoordinator {
     func requestInitialPresentation() {
         guard !didRequestInitialPresentation else { return }
         didRequestInitialPresentation = true
-        showSkillsWindow()
+        showLibraryWindow()
     }
 
     func handleDockReopen(hasVisibleWindows: Bool) {
@@ -43,21 +41,19 @@ final class WindowCoordinator {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        showSkillsWindow()
+        showLibraryWindow()
     }
 
-    func showSkillsWindow() {
-        show(.skills, activate: true)
+    func showLibraryWindow() {
+        show(.library)
     }
 
     func showSettingsWindow() {
-        show(.settings, activate: true)
+        show(.settings)
     }
 
-    private func show(_ target: AppWindow, activate: Bool) {
-        if activate {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+    private func show(_ target: AppWindow) {
+        NSApp.activate(ignoringOtherApps: true)
 
         if let existingWindow = existingWindow(for: target) {
             if existingWindow.isMiniaturized {
@@ -86,12 +82,9 @@ final class WindowCoordinator {
     }
 
     private func existingWindow(for target: AppWindow) -> NSWindow? {
-        for window in NSApp.windows {
+        NSApp.windows.first { window in
             let identifier = window.identifier?.rawValue ?? ""
-            if identifier.contains(target.rawValue) || window.title == target.title {
-                return window
-            }
+            return identifier.contains(target.rawValue) || window.title == target.title
         }
-        return nil
     }
 }
