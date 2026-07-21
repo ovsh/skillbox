@@ -90,10 +90,7 @@ struct SkillDetail: View {
                         Spacer()
                         StatusDot(isOn: library.isActiveForClaude(skill))
                     }
-                    OverridePicker(
-                        state: skill.claudeOverride ?? .on,
-                        onChange: { library.setClaudeOverride(skill, $0 == .on ? nil : $0) }
-                    )
+                    OverridePicker(skill: skill)
                     Text(overrideCaption)
                         .font(Theme.meta)
                         .foregroundStyle(Theme.inkTertiary)
@@ -169,11 +166,16 @@ struct SkillDetail: View {
 
 /// Segmented 4-state control for skillOverrides.
 private struct OverridePicker: View {
-    let state: SkillOverrideState
-    let onChange: (SkillOverrideState) -> Void
+    @Environment(SkillLibraryModel.self) private var library
+    let skill: InstalledSkill
 
     var body: some View {
-        Picker("", selection: Binding(get: { state }, set: onChange)) {
+        Picker("", selection: Binding(
+            get: { skill.claudeOverride ?? .on },
+            set: { newState in
+                library.setClaudeOverride(skill, newState == .on ? nil : newState)
+            }
+        )) {
             Text("On").tag(SkillOverrideState.on)
             Text("Name only").tag(SkillOverrideState.nameOnly)
             Text("Manual only").tag(SkillOverrideState.userInvocableOnly)
@@ -235,8 +237,9 @@ private struct SkillDocument: View {
 // MARK: - Markdown theme
 
 extension MarkdownUI.Theme {
-    /// DocC-derived theme recolored to the Skillbox palette.
-    static let skillbox = MarkdownUI.Theme.docC
+    /// DocC-derived theme recolored to the Skillbox palette. MainActor because
+    /// MarkdownUI.Theme is not Sendable; it's only ever touched from views.
+    @MainActor static let skillbox = MarkdownUI.Theme.docC
         .text {
             ForegroundColor(Skillbox.Theme.ink)
             FontSize(13)

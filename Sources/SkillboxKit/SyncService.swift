@@ -10,6 +10,11 @@ public struct SyncOutcome: Sendable {
 
 /// Orchestrates one full sync:
 /// git pull → scan catalog → plan against lockfile → apply → save lockfile.
+///
+/// DORMANT IN v2: no UI path invokes registry sync — Skillbox is single-player
+/// for now. Before team mode revives this, the Planner/Installer must become
+/// shelf-aware (a sync could otherwise resurrect a skill the user shelved via
+/// SkillShelf). See PLAN.md §8, review finding #13.
 public struct SyncService: Sendable {
     private let gitClient = GitClient()
     private let scanner = CatalogScanner()

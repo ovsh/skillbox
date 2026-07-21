@@ -19,17 +19,11 @@ public enum Frontmatter {
 
     /// Parses metadata from raw file content, falling back to `fallbackName`.
     public static func parseSkillMetadata(_ content: String, fallbackName: String) -> SkillMetadata {
-        var name = fallbackName
-        var description = ""
-
-        for (key, value) in fields(in: content) {
-            switch key {
-            case "name": name = value
-            case "description": description = value
-            default: break
-            }
-        }
-        return SkillMetadata(name: name, description: description)
+        let fields = parseAllFields(content)
+        return SkillMetadata(
+            name: fields["name"] ?? fallbackName,
+            description: fields["description"] ?? ""
+        )
     }
 
     /// Reads the head of the file at `path` (up to `readLimit` bytes) so large
@@ -41,13 +35,13 @@ public enum Frontmatter {
         return String(data: data, encoding: .utf8)
     }
 
-    /// Extracts flat key/value pairs from a frontmatter fence. Returns [] when
-    /// the content doesn't start with `---`.
-    private static func fields(in content: String) -> [(String, String)] {
+    /// Extracts all flat key/value pairs from a frontmatter fence. Later
+    /// duplicate keys win. Returns an empty map without an opening fence.
+    public static func parseAllFields(_ content: String) -> [String: String] {
         let lines = content.split(separator: "\n", omittingEmptySubsequences: false)
-        guard lines.first?.trimmed == "---" else { return [] }
+        guard lines.first?.trimmed == "---" else { return [:] }
 
-        var result: [(String, String)] = []
+        var result: [String: String] = [:]
         for line in lines.dropFirst() {
             if line.trimmed == "---" { break }
             let parts = line.split(separator: ":", maxSplits: 1)
@@ -58,7 +52,7 @@ public enum Frontmatter {
                (value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2) {
                 value = String(value.dropFirst().dropLast())
             }
-            result.append((key, value))
+            result[key] = value
         }
         return result
     }
