@@ -105,15 +105,17 @@ extension View {
 // MARK: - Empty state
 
 struct EmptyState: View {
-    let systemImage: String
+    var systemImage: String? = nil
     let title: String
     var message: String? = nil
 
     var body: some View {
         VStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(Theme.inkTertiary)
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundStyle(Theme.inkTertiary)
+            }
             Text(title)
                 .font(Theme.bodyMedium)
                 .foregroundStyle(Theme.inkSecondary)

@@ -75,9 +75,8 @@ struct LibraryWindow: View {
             SkillDetail(skill: skill)
         } else {
             EmptyState(
-                systemImage: "sparkles",
                 title: "Select a skill",
-                message: "See what it does, where it's installed, and switch it for Claude. ⌘-click or ⇧-click to select several."
+                message: "See what it does, where it's installed, and switch it for Claude."
             )
         }
     }
