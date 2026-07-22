@@ -41,25 +41,39 @@ struct BulkActionsPane: View {
                 }
             }
 
-            HStack(spacing: 8) {
-                Button("Turn On") {
+            HStack(spacing: 10) {
+                BigActionButton(
+                    title: "Turn On",
+                    systemImage: "power",
+                    style: .affirm,
+                    isEnabled: !toggleable.isEmpty
+                ) {
                     library.setActiveBulk(toggleable, true)
                 }
-                .disabled(toggleable.isEmpty)
-                Button("Turn Off") {
+                BigActionButton(
+                    title: "Turn Off",
+                    systemImage: "moon",
+                    style: .neutral,
+                    isEnabled: !toggleable.isEmpty
+                ) {
                     library.setActiveBulk(toggleable, false)
                 }
-                .disabled(toggleable.isEmpty)
-                Button("Delete…", role: .destructive) {
+                BigActionButton(
+                    title: "Delete…",
+                    systemImage: "trash",
+                    style: .destructive
+                ) {
                     confirmingDelete = true
                 }
             }
-            .controlSize(.small)
+            .frame(maxWidth: 460)
+            .padding(.top, 6)
 
             Text("Turn Off hides skills from Claude — files stay on disk. Delete moves folders to the Trash (links are removed link-only).")
                 .font(Theme.meta)
                 .foregroundStyle(Theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 460, alignment: .leading)
 
             if let error = library.lastError {
                 Text(error)

@@ -166,35 +166,108 @@ struct QuietButtonStyle: ButtonStyle {
 
 // MARK: - Graphite checkbox
 
-/// 14pt square checkbox for multi-select. Lives in a reserved row slot and
-/// fades in on hover so selection is discoverable without ⌘-click knowledge.
+/// 14pt square checkbox for multi-select with a generous 28×36 hit target.
+/// Fades in on hover so selection is discoverable without ⌘-click knowledge.
+/// `isMixed` renders the "some selected" dash for the select-all master.
 struct GraphiteCheckbox: View {
     let isOn: Bool
     let isVisible: Bool
+    var isMixed = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             RoundedRectangle(cornerRadius: 3.5)
-                .fill(isOn ? Theme.ink : .clear)
+                .fill(isOn || isMixed ? Theme.ink : .clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: 3.5)
-                        .strokeBorder(isOn ? Theme.ink : Theme.inkTertiary, lineWidth: 1)
+                        .strokeBorder(isOn || isMixed ? Theme.ink : Theme.inkTertiary, lineWidth: 1)
                 )
                 .overlay {
-                    if isOn {
+                    if isMixed {
+                        Image(systemName: "minus")
+                            .font(.system(size: 8.5, weight: .bold))
+                            .foregroundStyle(Theme.canvas)
+                    } else if isOn {
                         Image(systemName: "checkmark")
                             .font(.system(size: 8.5, weight: .bold))
                             .foregroundStyle(Theme.canvas)
                     }
                 }
                 .frame(width: 14, height: 14)
+                .frame(width: 28, height: 36)   // hit target, not visual size
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .opacity(isVisible || isOn ? 1 : 0)
-        .animation(Theme.fade, value: isVisible || isOn)
-        .accessibilityLabel(isOn ? "Deselect skill" : "Select skill")
+        .opacity(isVisible || isOn || isMixed ? 1 : 0)
+        .animation(Theme.fade, value: isVisible || isOn || isMixed)
+        .accessibilityLabel(isOn ? "Deselect" : "Select")
+    }
+}
+
+// MARK: - Big action button
+
+/// Bulk-pane action: 40pt, icon + label, tinted fill with hairline border.
+/// The one place buttons get to be big.
+struct BigActionButton: View {
+    let title: String
+    let systemImage: String
+    var style: Style = .neutral
+    var isEnabled = true
+    let action: () -> Void
+    @State private var isHovered = false
+
+    enum Style { case affirm, neutral, destructive }
+
+    private var tint: Color {
+        switch style {
+        case .affirm: Theme.switchOn
+        case .neutral: Theme.ink
+        case .destructive: Theme.danger
+        }
+    }
+
+    private var fill: Color {
+        switch style {
+        case .affirm: Theme.switchOn.opacity(isHovered ? 0.28 : 0.16)
+        case .neutral: isHovered ? Theme.hover : Theme.raised
+        case .destructive: Theme.danger.opacity(isHovered ? 0.22 : 0.10)
+        }
+    }
+
+    private var border: Color {
+        switch style {
+        case .affirm: Theme.switchOn.opacity(0.4)
+        case .neutral: Theme.border
+        case .destructive: Theme.danger.opacity(0.35)
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .fixedSize()
+            }
+            .foregroundStyle(style == .neutral ? Theme.ink : tint)
+            .frame(maxWidth: .infinity)
+            .frame(height: 40)
+            .background(fill, in: .rect(cornerRadius: Theme.radius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.radius)
+                    .strokeBorder(border, lineWidth: 0.5)
+            )
+            .contentShape(.rect(cornerRadius: Theme.radius))
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.4)
+        .onHover { hovering in
+            withAnimation(Theme.fade) { isHovered = hovering }
+        }
     }
 }
 

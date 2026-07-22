@@ -24,7 +24,9 @@ struct SkillList: View {
             SearchField(text: $library.searchText, isFocused: $searchFocused)
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
+
+            selectAllHeader
 
             if library.skills.isEmpty && !library.isRefreshing {
                 EmptyState(
@@ -61,6 +63,50 @@ struct SkillList: View {
         } else {
             selectedSkillIDs.insert(skill.id)
             anchorSkillID = skill.id
+        }
+    }
+
+    /// Select-all master row: operates on exactly the VISIBLE rows, so an
+    /// active search or tool filter scopes the selection with it.
+    private var selectAllHeader: some View {
+        let visibleIDs = Set(visibleSkills.map(\.id))
+        let selectedVisible = visibleIDs.intersection(selectedSkillIDs)
+        let allSelected = !visibleIDs.isEmpty && selectedVisible.count == visibleIDs.count
+
+        return HStack(spacing: 0) {
+            GraphiteCheckbox(
+                isOn: allSelected,
+                isVisible: true,
+                isMixed: !allSelected && !selectedVisible.isEmpty,
+                action: toggleSelectAll
+            )
+            Button(action: toggleSelectAll) {
+                Text("Select all")
+                    .font(Theme.secondary)
+                    .foregroundStyle(Theme.inkSecondary)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+
+            if !selectedVisible.isEmpty {
+                Text("\(selectedVisible.count) of \(visibleIDs.count)")
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 18)
+        .frame(height: 28)
+    }
+
+    private func toggleSelectAll() {
+        let visibleIDs = Set(visibleSkills.map(\.id))
+        if visibleIDs.isSubset(of: selectedSkillIDs) {
+            selectedSkillIDs.subtract(visibleIDs)
+        } else {
+            selectedSkillIDs.formUnion(visibleIDs)
+            anchorSkillID = visibleSkills.first?.id
         }
     }
 
