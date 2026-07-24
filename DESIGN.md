@@ -41,7 +41,9 @@ dark objects on it):
 - Features are change entries: `+` buff rows in green, each with a one-line
   dev-note. Safety posture = "developer commentary" blockquotes.
 - Real screenshots sit as embedded client windows: Graphite-dark, hairline
-  border, corner-bracket frame accents (the icon's slot brackets).
+  border. The icon's corner brackets mark one equipped element per viewport:
+  the hero's menu-bar callout, and the library client frame. Smaller shots
+  (popover, bulk) stay plain so the bracket keeps its meaning.
 - Trust/facts in tables with mono values. No badges, no gradients on ground.
 - Bracket motif: HUD corner brackets (from the app icon) mark equipped
   things; never decorate more than one element per viewport with them.

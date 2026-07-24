@@ -86,8 +86,9 @@ all day.
   Claude Code's sanctioned per-skill toggle; file-watched).
 - MIT license; open source.
 - No testimonials, user counts, or benchmarks exist — never invent them.
-- Signing: Developer ID "Digital Lane LLC" (7Z82LSPAPP). Notarization pending
-  the user creating the `digital-lane` notarytool keychain profile.
+- Signing: Developer ID "Digital Lane LLC" (7Z82LSPAPP). v0.5.0 app and DMG
+  signed, notarized (Accepted), and stapled on 2026-07-24 via the
+  `digital-lane` notarytool profile; verified with spctl and stapler.
 
 ## Product Principles
 
