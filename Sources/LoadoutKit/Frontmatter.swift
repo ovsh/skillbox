@@ -78,9 +78,13 @@ public enum Frontmatter {
                 value = value.hasPrefix(">")
                     ? blockLines.joined(separator: " ")
                     : blockLines.joined(separator: "\n")
-            } else if (value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2) ||
-                      (value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2) {
+            } else if value.hasPrefix("\""), value.hasSuffix("\""), value.count >= 2 {
                 value = String(value.dropFirst().dropLast())
+                    .replacingOccurrences(of: "\\\"", with: "\"")
+                    .replacingOccurrences(of: "\\\\", with: "\\")
+            } else if value.hasPrefix("'"), value.hasSuffix("'"), value.count >= 2 {
+                value = String(value.dropFirst().dropLast())
+                    .replacingOccurrences(of: "''", with: "'")
             }
             result[key] = value
         }

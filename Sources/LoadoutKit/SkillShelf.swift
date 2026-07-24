@@ -20,7 +20,7 @@ public enum SkillShelfError: LocalizedError, Sendable {
         case .sourceNotDirectory(let path):
             return "The item at \(path) is not a skill folder and cannot be moved."
         case .symlinkedSkill:
-            return "Symlinked skills can't be shelved — toggle them for Claude instead."
+            return "Symlinked skills can't be shelved. Toggle them for Claude instead."
         case .destinationExists(let path):
             return "A skill folder already exists at \(path). Move or rename it before trying again."
         case .crossVolume(let source, let destination):

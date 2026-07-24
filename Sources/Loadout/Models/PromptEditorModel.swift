@@ -144,7 +144,7 @@ final class PromptEditorModel {
             } else {
                 loadedText = ""
                 readFailed = true
-                lastError = "Can't read \(file.displayName) — saving is disabled."
+                lastError = "Can't read \(file.displayName). Saving is disabled."
             }
         } else {
             loadedText = ""

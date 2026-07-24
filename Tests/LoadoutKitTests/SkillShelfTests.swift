@@ -150,7 +150,7 @@ struct SkillShelfTests {
                 }
                 #expect(
                     error.localizedDescription
-                        == "Symlinked skills can't be shelved — toggle them for Claude instead."
+                        == "Symlinked skills can't be shelved. Toggle them for Claude instead."
                 )
             }
 

@@ -1,0 +1,49 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E1E23"/>
+      <stop offset="0.55" stop-color="#151518"/>
+      <stop offset="1" stop-color="#101012"/>
+    </linearGradient>
+    <linearGradient id="equip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#66B27C"/>
+      <stop offset="1" stop-color="#4E9A64"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="46" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+      </feMerge>
+    </filter>
+    <!-- one slot's corner brackets: cell is 0..460 -->
+    <g id="brackets">
+      <path d="M 8 128 L 8 56 Q 8 8 56 8 L 128 8" fill="none" stroke-linecap="round"/>
+      <path d="M 332 8 L 404 8 Q 452 8 452 56 L 452 128" fill="none" stroke-linecap="round"/>
+      <path d="M 452 332 L 452 404 Q 452 452 404 452 L 332 452" fill="none" stroke-linecap="round"/>
+      <path d="M 128 452 L 56 452 Q 8 452 8 404 L 8 332" fill="none" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <!-- macOS tile -->
+  <rect x="200" y="200" width="1648" height="1648" rx="368" fill="url(#tile)"/>
+  <rect x="203" y="203" width="1642" height="1642" rx="365" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="6"/>
+
+  <!-- 2x2 slot grid: cells 460, gap 132, grid 1052, origin 498 -->
+  <!-- equipped slot (top-left): green fill + bright brackets -->
+  <g transform="translate(498,498)">
+    <rect x="78" y="78" width="304" height="304" rx="64" fill="#58A56E" opacity="0.55" filter="url(#glow)"/>
+    <rect x="78" y="78" width="304" height="304" rx="64" fill="url(#equip)"/>
+    <use href="#brackets" stroke="#7FC493" stroke-width="34"/>
+  </g>
+
+  <!-- empty slots -->
+  <g transform="translate(1090,498)">
+    <use href="#brackets" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="30"/>
+  </g>
+  <g transform="translate(498,1090)">
+    <use href="#brackets" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="30"/>
+  </g>
+  <g transform="translate(1090,1090)">
+    <use href="#brackets" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="30"/>
+  </g>
+</svg>

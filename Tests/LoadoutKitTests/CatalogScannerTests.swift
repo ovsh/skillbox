@@ -99,6 +99,15 @@ struct FrontmatterTests {
         #expect(meta.description == "Single quoted")
     }
 
+    @Test("Escapes inside quoted scalars are unescaped")
+    func quotedEscapes() {
+        let fields = Frontmatter.parseAllFields(
+            "---\ndescription: \"Use for \\\"automate this\\\" requests\"\nnote: 'it''s fine'\n---\n"
+        )
+        #expect(fields["description"] == "Use for \"automate this\" requests")
+        #expect(fields["note"] == "it's fine")
+    }
+
     @Test("Content without frontmatter falls back")
     func noFrontmatter() {
         let meta = Frontmatter.parseSkillMetadata("# Just a title", fallbackName: "dir-name")

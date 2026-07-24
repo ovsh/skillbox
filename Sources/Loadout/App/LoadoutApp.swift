@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let env = ProcessInfo.processInfo.environment
 
         // Enable launch at login by default on first run unless explicitly disabled
-        if env["SKILLBOX_SKIP_LOGIN_ITEM"] != "1" {
+        if env["LOADOUT_SKIP_LOGIN_ITEM"] != "1" {
             let launchKey = "hasRegisteredLoginItem"
             if !UserDefaults.standard.bool(forKey: launchKey) {
                 try? SMAppService.mainApp.register()
@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        if env["SKILLBOX_DISABLE_ANALYTICS"] != "1" {
+        if env["LOADOUT_DISABLE_ANALYTICS"] != "1" {
             Analytics.setup()
         }
 
@@ -55,7 +55,7 @@ private struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: "shippingbox")
+        Image(systemName: "backpack")
             .onAppear {
                 WindowCoordinator.shared.register(openWindow: openWindow)
             }

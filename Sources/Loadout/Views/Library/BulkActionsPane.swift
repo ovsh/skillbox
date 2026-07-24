@@ -69,7 +69,7 @@ struct BulkActionsPane: View {
             .frame(maxWidth: 460)
             .padding(.top, 6)
 
-            Text("Turn Off hides skills from Claude — files stay on disk. Delete moves folders to the Trash (links are removed link-only).")
+            Text("Turn Off hides skills from Claude; files stay on disk. Delete moves folders to the Trash (links are removed link-only).")
                 .font(Theme.meta)
                 .foregroundStyle(Theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -114,10 +114,10 @@ struct BulkActionsPane: View {
     private var deleteMessage: String {
         let links = skills.count { $0.presences.contains(where: \.isSymlink) }
         if links == skills.count {
-            return "All \(skills.count) are links — only the links are removed; the original files stay where they are. Claude settings are cleared."
+            return "All \(skills.count) are links. Only the links are removed; the original files stay where they are. Claude settings are cleared."
         }
         if links > 0 {
-            return "Skill folders move to the Trash; \(links) symlinked \(links == 1 ? "skill loses only its link" : "skills lose only their links") — originals stay. Claude settings are cleared."
+            return "Skill folders move to the Trash; \(links) symlinked \(links == 1 ? "skill loses only its link" : "skills lose only their links"); originals stay. Claude settings are cleared."
         }
         return "The skill folders move to the Trash and their Claude settings are cleared. You can restore them from the Trash."
     }

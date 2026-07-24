@@ -269,7 +269,7 @@ final class SkillLibraryModel {
         // Never move any copy of a skill that participates in symlinks:
         // shelving the real directory would dangle the other tools' links.
         guard !skill.presences.contains(where: \.isSymlink) else {
-            lastError = "\(skill.name) is linked between tools — shelving is disabled to keep those links intact."
+            lastError = "\(skill.name) is linked between tools. Shelving is disabled to keep those links intact."
             return
         }
         guard let target = registry.targets.first(where: { $0.id == targetID }),

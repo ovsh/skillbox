@@ -21,8 +21,10 @@ struct SkillList: View {
         @Bindable var library = library
 
         VStack(spacing: 0) {
+            // Same 8pt outer edge as the row hover washes; the icon then sits
+            // on the rows' 18pt content line.
             SearchField(text: $library.searchText, isFocused: $searchFocused)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 8)
                 .padding(.top, 10)
                 .padding(.bottom, 4)
 
@@ -30,7 +32,7 @@ struct SkillList: View {
 
             if library.skills.isEmpty && !library.isRefreshing {
                 EmptyState(
-                    systemImage: "shippingbox",
+                    systemImage: "backpack",
                     title: "No skills yet",
                     message: "Skills you add to ~/.claude/skills or ~/.agents/skills appear here."
                 )
@@ -171,7 +173,7 @@ private struct SearchField: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 9)
+        .padding(.horizontal, 10)
         .frame(height: 30)
         .background(Theme.raised, in: .rect(cornerRadius: Theme.radiusSmall))
         .overlay(
@@ -203,11 +205,16 @@ struct SkillRow: View {
     // and the detail/bulk panes never churn on membership changes.
     var body: some View {
         HStack(spacing: 8) {
-            GraphiteCheckbox(
-                isOn: isSelected,
-                isVisible: isHovered || multiSelectActive,
-                action: toggleChecked
-            )
+            // Selection-mode column: checkboxes appear for every row at once
+            // while a multi-selection exists, and idle rows reserve no gutter.
+            if multiSelectActive {
+                GraphiteCheckbox(
+                    isOn: isSelected,
+                    isVisible: true,
+                    action: toggleChecked
+                )
+                .transition(.opacity)
+            }
 
             if library.isClaudeAvailable(skill) {
                 MorphToggle(
@@ -249,6 +256,7 @@ struct SkillRow: View {
         }
         .opacity(rowOpacity)
         .animation(Theme.fade, value: rowOpacity)
+        .animation(Theme.fade, value: multiSelectActive)
         .padding(.horizontal, 10)
         .frame(height: Theme.rowHeight)
         .background(

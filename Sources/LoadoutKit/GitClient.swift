@@ -115,7 +115,7 @@ public struct GitClient: Sendable {
             return "GitHub auth expired or rejected. Run `gh auth login && gh auth setup-git` to re-authenticate."
         }
         if lower.contains("returned error: 403") || lower.contains("returned error: 401") {
-            return "Access denied — GitHub rejected your credentials. Re-authenticate with `gh auth login && gh auth setup-git`."
+            return "Access denied: GitHub rejected your credentials. Re-authenticate with `gh auth login && gh auth setup-git`."
         }
 
         // SSH errors
@@ -131,7 +131,7 @@ public struct GitClient: Sendable {
 
         // Network errors
         if lower.contains("could not resolve hostname") {
-            return "Cannot reach GitHub — check your internet connection."
+            return "Cannot reach GitHub. Check your internet connection."
         }
         if lower.contains("connection refused") {
             return "Connection refused by GitHub. Check your network or firewall settings."
@@ -155,6 +155,6 @@ public struct GitClient: Sendable {
         }
 
         let detail = raw.count > 200 ? String(raw.prefix(200)) + "…" : raw
-        return "Git error — open Settings and run Setup Check.\n\nDetail: \(detail)"
+        return "Git error. Open Settings and run Setup Check.\n\nDetail: \(detail)"
     }
 }

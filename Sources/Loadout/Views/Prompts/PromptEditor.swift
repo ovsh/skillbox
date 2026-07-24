@@ -106,10 +106,10 @@ struct PromptEditor: View {
 
     private var saveStatus: String {
         if let error = prompts.lastError { return error }
-        if prompts.hasDiskConflict { return "Conflict — resolve above" }
-        if prompts.isDirty { return "Unsaved — autosaves shortly" }
+        if prompts.hasDiskConflict { return "Conflict: resolve above" }
+        if prompts.isDirty { return "Unsaved. Autosaves shortly" }
         if let saved = prompts.lastSavedAt { return "Saved \(RelativeDateText.string(for: saved))" }
-        return prompts.selectedFile?.exists == true ? "Saved" : "Not created yet — saving creates it"
+        return prompts.selectedFile?.exists == true ? "Saved" : "Not created yet. Saving creates it"
     }
 
     private func abbreviatedPath(_ file: PromptFile) -> String {

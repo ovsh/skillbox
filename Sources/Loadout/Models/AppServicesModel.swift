@@ -17,7 +17,7 @@ final class AppServicesModel {
 
     private let updateChecker = UpdateChecker()
     private let backgroundJobsDisabled =
-        ProcessInfo.processInfo.environment["SKILLBOX_DISABLE_BACKGROUND_JOBS"] == "1"
+        ProcessInfo.processInfo.environment["LOADOUT_DISABLE_BACKGROUND_JOBS"] == "1"
 
     var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"

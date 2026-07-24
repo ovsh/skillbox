@@ -46,7 +46,7 @@ public struct SyncService: Sendable {
 
         let targets = registry.enabled(settings: settings, home: home)
         guard !targets.isEmpty else {
-            logger(.warn, "No targets enabled — nothing to install.")
+            logger(.warn, "No targets enabled; nothing to install.")
             return SyncOutcome(
                 catalog: catalog,
                 summary: InstallSummary(added: 0, updated: 0, removed: 0, managedFileCount: 0),

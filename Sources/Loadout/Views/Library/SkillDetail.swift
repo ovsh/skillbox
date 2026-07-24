@@ -100,11 +100,11 @@ struct SkillDetail: View {
         let folders = skill.presences.count - links
         switch (folders > 0, links > 0) {
         case (true, true):
-            return "The skill folder moves to the Trash and \(links == 1 ? "its link is" : "\(links) links are") removed — the linked originals stay where they are. Its Claude setting is cleared."
+            return "The skill folder moves to the Trash and \(links == 1 ? "its link is" : "\(links) links are") removed; the linked originals stay where they are. Its Claude setting is cleared."
         case (true, false):
             return "The skill folder moves to the Trash and its Claude setting is cleared. You can restore it from the Trash."
         default:
-            return "Only the link\(links == 1 ? "" : "s") to this skill \(links == 1 ? "is" : "are") removed — the original files stay where they are. Its Claude setting is cleared."
+            return "Only the link\(links == 1 ? "" : "s") to this skill \(links == 1 ? "is" : "are") removed; the original files stay where they are. Its Claude setting is cleared."
         }
     }
 
@@ -116,16 +116,16 @@ struct SkillDetail: View {
 
     private var captionText: String {
         guard library.isClaudeAvailable(skill) else {
-            return "No live copy in ~/.claude/skills — Claude Code can't load this skill."
+            return "No live copy in ~/.claude/skills, so Claude Code can't load this skill."
         }
         if library.overridesUnreadable {
-            return "~/.claude/settings.json can't be parsed — fix it (or restore the .loadout.bak) to re-enable switching."
+            return "~/.claude/settings.json can't be parsed. Fix it (or restore the .loadout.bak) to re-enable switching."
         }
         switch skill.claudeOverride ?? .on {
-        case .on: return "On — Claude can invoke this skill, and /\(skill.dirName) runs it directly. Off hides it from Claude; files stay on disk."
-        case .nameOnly: return "Name only — Claude sees the name but won't auto-invoke. /\(skill.dirName) still works."
-        case .userInvocableOnly: return "Manual only — hidden from Claude; you can still run /\(skill.dirName) yourself."
-        case .off: return "Off — hidden from Claude, the / menu, and Agent SDK apps. Files stay on disk; Delete removes them."
+        case .on: return "On: Claude can invoke this skill, and /\(skill.dirName) runs it directly. Off hides it from Claude; files stay on disk."
+        case .nameOnly: return "Name only: Claude sees the name but won't auto-invoke. /\(skill.dirName) still works."
+        case .userInvocableOnly: return "Manual only: hidden from Claude; you can still run /\(skill.dirName) yourself."
+        case .off: return "Off: hidden from Claude, the / menu, and Agent SDK apps. Files stay on disk; Delete removes them."
         }
     }
 
@@ -205,7 +205,7 @@ struct SkillDetail: View {
                     }
                 }
                 Text(groupHasSymlink
-                     ? "This skill is linked between tools — moving any copy would break those links, so shelving is disabled."
+                     ? "This skill is linked between tools. Moving any copy would break those links, so shelving is disabled."
                      : "Off moves this folder to Loadout's shelf and this tool stops reading this copy. Other copies are unaffected.")
                     .font(Theme.meta)
                     .foregroundStyle(Theme.inkTertiary)
