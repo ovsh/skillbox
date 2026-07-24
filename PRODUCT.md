@@ -75,6 +75,12 @@ all day.
   pixel-sky "Daylight" look.
 - User asked for a new app icon and brand style informed by current design
   inspiration found online (mood-board ingestion per design-motion skill).
+- STANDING LANDING-PAGE PREFERENCE (user, 2026-07-24): the conventional
+  modern Mac-app landing page, played straight, at Raycast's craft bar. The
+  themed "Balance Patch" world was built, shipped, and rejected by the user
+  ("doesn't feel like a normal landing page"). Do not pitch themed worlds
+  for the landing page again; execute the category standard at full
+  fidelity. PowerWatch's pixel-sky look also remains excluded.
 - Voice: plain, factual, quiet confidence. Safety posture stated concretely
   (backs up settings.json once, patches only the one key it owns, everything
   reversible), never marketed as vague "safe & secure".
