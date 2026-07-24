@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="Skillbox.app"
-EXECUTABLE_NAME="Skillbox"
+APP_NAME="Loadout.app"
+EXECUTABLE_NAME="Loadout"
 SOURCE_APP="$ROOT_DIR/dist/$APP_NAME"
 TARGET_DIR="${TARGET_DIR:-$HOME/Applications}"
 TARGET_APP="$TARGET_DIR/$APP_NAME"
@@ -13,7 +13,7 @@ OPEN_AFTER_INSTALL="${OPEN_AFTER_INSTALL:-1}"
 
 # Quit any running instance before overwriting
 if pgrep -x "$EXECUTABLE_NAME" >/dev/null 2>&1; then
-  echo "Stopping running Skillbox..."
+  echo "Stopping running Loadout..."
   pkill -x "$EXECUTABLE_NAME" || true
   sleep 1
 fi

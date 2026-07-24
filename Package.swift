@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "Skillbox",
+    name: "Loadout",
     platforms: [
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "Skillbox", targets: ["Skillbox"]),
-        .library(name: "SkillboxKit", targets: ["SkillboxKit"]),
+        .executable(name: "Loadout", targets: ["Loadout"]),
+        .library(name: "LoadoutKit", targets: ["LoadoutKit"]),
     ],
     dependencies: [
         // Pinned: 3.4x is the last line that compiles cleanly against the
@@ -18,17 +18,17 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SkillboxKit",
-            path: "Sources/SkillboxKit"
+            name: "LoadoutKit",
+            path: "Sources/LoadoutKit"
         ),
         .executableTarget(
-            name: "Skillbox",
+            name: "Loadout",
             dependencies: [
-                "SkillboxKit",
+                "LoadoutKit",
                 .product(name: "PostHog", package: "posthog-ios"),
                 .product(name: "MarkdownUI", package: "swift-markdown-ui"),
             ],
-            path: "Sources/Skillbox",
+            path: "Sources/Loadout",
             resources: [
                 .copy("Resources/AppIcon.png")
             ],
@@ -40,9 +40,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "SkillboxKitTests",
-            dependencies: ["SkillboxKit"],
-            path: "Tests/SkillboxKitTests"
+            name: "LoadoutKitTests",
+            dependencies: ["LoadoutKit"],
+            path: "Tests/LoadoutKitTests"
         ),
     ]
 )

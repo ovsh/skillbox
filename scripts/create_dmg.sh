@@ -3,17 +3,17 @@ set -euo pipefail
 
 # Creates a polished DMG with drag-to-Applications layout.
 # Usage: ./scripts/create_dmg.sh [app_path] [dmg_path]
-#   app_path  defaults to dist/Skillbox.app
-#   dmg_path  defaults to dist/Skillbox-MacOS.dmg
+#   app_path  defaults to dist/Loadout.app
+#   dmg_path  defaults to dist/Loadout-MacOS.dmg
 #
 # Optional env vars:
 #   DMG_SIZE_MB=<int>            size of temporary writable image (default: 200)
 #   DMG_USE_FINDER_LAYOUT=auto   auto|1|0 (default auto; auto disables Finder in CI)
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="${1:-$ROOT_DIR/dist/Skillbox.app}"
-DMG_PATH="${2:-$ROOT_DIR/dist/Skillbox-MacOS.dmg}"
-VOL_NAME="Skillbox"
+APP_PATH="${1:-$ROOT_DIR/dist/Loadout.app}"
+DMG_PATH="${2:-$ROOT_DIR/dist/Loadout-MacOS.dmg}"
+VOL_NAME="Loadout"
 DMG_SIZE_MB="${DMG_SIZE_MB:-200}"
 DMG_USE_FINDER_LAYOUT="${DMG_USE_FINDER_LAYOUT:-auto}"
 
@@ -107,7 +107,7 @@ on run argv
             set theViewOptions to the icon view options of container window
             set arrangement of theViewOptions to not arranged
             set icon size of theViewOptions to 80
-            set position of item "Skillbox.app" of container window to {120, 140}
+            set position of item "Loadout.app" of container window to {120, 140}
             set position of item "Applications" of container window to {380, 140}
             close
             open
@@ -134,7 +134,7 @@ rm -f "$DMG_PATH"
 retry 3 1 detach_existing_volume || true
 
 # Create temporary writable DMG.
-TEMP_DIR="$(mktemp -d -t skillbox_dmg)"
+TEMP_DIR="$(mktemp -d -t loadout_dmg)"
 TEMP_DMG="$TEMP_DIR/temp.dmg"
 hdiutil create \
   -size "${DMG_SIZE_MB}m" \
@@ -146,7 +146,7 @@ hdiutil create \
 retry 3 2 attach_temp_dmg
 
 # Copy app and create Applications symlink
-ditto "$APP_PATH" "$MOUNT_POINT/Skillbox.app"
+ditto "$APP_PATH" "$MOUNT_POINT/Loadout.app"
 ln -sfn /Applications "$MOUNT_POINT/Applications"
 
 if [[ "$DMG_USE_FINDER_LAYOUT" == "1" ]]; then
