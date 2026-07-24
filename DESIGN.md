@@ -36,8 +36,12 @@ dark objects on it):
 
 ## Grammar (the patch-notes system carried into the page)
 
-- Masthead = patch header: LOADOUT wordmark, PATCH 0.5.0 oversized, date,
-  one plain-words offer line, DEPLOY button. Offer line never cosplays.
+- Masthead: LOADOUT wordmark, a headline that states the offer in plain
+  words ("Every skill your AI tools have, one switch each."), version + date
+  in mono metadata, one supporting sentence, Download button. The patch
+  grammar is visual (rules, markers, inks); the words never cosplay.
+  Revised 2026-07-24 after user feedback plus a three-round blind visitor
+  test loop (all PASS).
 - Features are change entries: `+` buff rows in green, each with a one-line
   dev-note. Safety posture = "developer commentary" blockquotes.
 - Real screenshots sit as embedded client windows: Graphite-dark, hairline
