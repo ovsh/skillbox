@@ -1,4 +1,4 @@
-# DESIGN.md — Loadout landing page ("Instrument" world)
+# DESIGN.md — Loadout landing page ("Instrument" world, single-viewport)
 
 Scope: `site/` (the landing page). The **app's** incumbent design system is
 separate and lives in `design/DIRECTION-A.md` ("Graphite"); nothing here
@@ -7,100 +7,107 @@ restyles the app.
 ## World
 
 The conventional modern Mac-app landing page, played straight, at Raycast's
-craft bar. Chosen by the user as a standing preference (2026-07-24, recorded
-in PRODUCT.md under Brand Commitments) after the themed "Balance Patch"
-patch-notes world shipped and was rejected ("doesn't feel like a normal
-landing page"). This is the canon executed at full fidelity: dark instrument
-ground, one huge hero statement, quiet paired section headers, real product
-windows carrying every section, hairline cards, one glowing off-white CTA.
-No themed conceits, no pixel art, no patch-notes grammar.
+craft bar — compressed to ONE VIEWPORT with no scrolling. Two user rulings
+shape this surface (both 2026-07-24, recorded in PRODUCT.md Brand
+Commitments):
+
+1. No themed conceits. The "Balance Patch" patch-notes world was built and
+   rejected ("doesn't feel like a normal landing page"). Pixel-art excluded.
+2. No long-scroll page. The multi-section build (hero / menu-bar / three
+   mechanism rows / trust / close) was rejected as "too convoluted". The
+   page is a single screen: statement, one supporting sentence, Download,
+   fact line, one real window. Mechanism detail lives in the GitHub README.
 
 Reference studied in the browser 2026-07-24: raycast.com. Its grammar, not
-its skin: ground #07080A, one 64px/600 hero statement then 20px/500 header
-pairs (white line + muted second line), hairline cards rgba(255,255,255,.08)
-at 12–19px radius, ~1200px column, off-white buttons with layered ring
-shadows, product UI as the only imagery.
+its skin: near-black ground, one huge statement, off-white glowing CTA,
+real product UI as the only imagery.
 
-## Tokens (settled by the build)
+## Tokens
 
-- Ground `--bg: #0A0B0D` · raised `--panel: #111216` · the app's Graphite
-  canvas (#101012) arrives inside the screenshots and reads as kin
+- Ground `--bg: #0A0B0D`; the app's Graphite canvas (#101012) arrives inside
+  the screenshot and reads as kin.
 - Text `--fg: #F2F3F5` · secondary `--mute: #9BA0A6` · tertiary `--dim: #6C7076`
-- Hairline `--line: rgba(255,255,255,.08)` · hover line `rgba(255,255,255,.16)`
-- Accent `--green: #6CAB82` (the app icon's equipped-slot green; state color
-  as brand). Small-text tint `#8FC4A4`. Used for: status dots, the toggle
-  demo, inline emphasis. Never floods a region; the page is Restrained
-  (neutrals + one accent).
-- CTA is NOT the accent: off-white `#E9EAEC` button, near-black text,
-  layered ring + soft glow shadow (the Raycast move). Green stays a state
-  color.
-- Radius: buttons 10px, cards 14px, window frames 12px. Borders 1px always.
+- Hairline `--line: rgba(255,255,255,.08)` · window edge `rgba(255,255,255,.16)`
+- CTA off-white `--cta: #E9EAEC`, text `#17181B`, layered ring + soft glow
+  shadow (the Raycast move). Page chrome stays neutral; the green lives in
+  the screenshot and in the ground atmosphere (below).
+- Ground atmosphere (`.bg`, fixed, aria-hidden): a green radial bloom
+  (rgba(108,171,130,.26) ellipse centered at the window's top edge) plus a
+  deeper green wash from the bottom, a faint off-white spotlight over the
+  statement, and SVG fractalNoise film grain at ~2% effective alpha. All
+  CSS, zero requests, static (nothing animates). A tiled hairline grid was
+  tried and cut (stock generated-UI signature, flagged by the design hook;
+  glows-not-grids is also Raycast's own grammar).
+- Radius: buttons 10px, window frame 12px. Borders 1px always.
 
 ## Type
 
-- One face: **Archivo** variable (self-hosted WOFF2, weight 100–900, width
-  62–125%), used at normal width throughout. The expanded-width display
-  styling belonged to the rejected world; the canon wants it plain.
-- Hero: clamp(40px → 68px), weight ~640, tracking -0.03em, line-height 1.03.
-- Section header pairs: 21px/560 white + same-size muted second line.
-- Body 16.5px/1.65. Small meta 13px.
-- Mono (`ui-monospace` stack) only for code, paths, and values: the
-  settings.json snippet, shelf paths, version numbers. Never as costume.
+- One face: **Archivo** variable (self-hosted WOFF2), normal width.
+- Statement: clamp(40px → 72px), weight 640, tracking -0.03em, balanced.
+- Supporting sentence: 15.5–17.5px (vh-clamped), `--mute`, max 68ch,
+  two lines on desktop.
+- Mono (`ui-monospace` stack) only for the fact line:
+  "Free, MIT · Signed and notarized · macOS 14+", color #8A9098
+  (6.1:1 on the ground — `--dim` fails AA at this size, `--mute` outshouts
+  the sub).
 
-## Composition rules
+## Composition (single viewport)
 
-- Content column 1152px; sections separated by 120–160px of ground on
-  desktop (compressed to ~110–136px under 920px), no full-width tint bands,
-  no section rules, no tracked-uppercase eyebrows.
-- Screenshots are the imagery. Every window shot: 12px radius, 1px hairline,
-  deep offset shadow (0 24px 80px rgba(0,0,0,.55)), never a glow halo.
-- Nav: fixed pill, backdrop-blur, hairline border, app icon + wordmark left,
-  anchor links + Download right; darkens and lifts a shadow once the page
-  scrolls (`.scrolled`).
-- Footer: brand + one-line description, two real-link groups (Product,
-  Project), then a base row carrying the rename note ("Formerly Skillbox;
-  the GitHub repo keeps the old name") and macOS 14+. No invented links.
-- Mechanism panels are typographic evidence (real JSON, real paths), never
-  fake UI. A real prompt-editor capture is excluded deliberately: it would
-  publish the user's private CLAUDE.md contents.
-- How-it-works is rows (text beside artifact), not icon cards. Each
-  mechanism ships its evidence: real JSON, real paths, real UI.
-- Trust is a definition-style list with mono values; every claim concrete
-  and sourced from PRODUCT.md/README.md. Networking disclosure included.
+- `html, body { overflow: hidden }`; body is a 100% flex column:
+  slim bar → centered hero column → window.
+- Bar: brand (icon + wordmark) left, GitHub ↗ right. No nav links; there is
+  nowhere to navigate.
+- Hero column, centered: h1 → sub → [Download for Mac + Build from source ↗]
+  → mono fact line. All vertical gaps are vh-clamped so 1280×720 compresses
+  instead of clipping.
+- The window: library.png (real capture) at min(1060px, 92vw), 12px radius,
+  1px `--line-strong` edge, 0 24px 80px rgba(0,0,0,.55) shadow, top-aligned
+  in the remaining flex space and CROPPED BY THE FOLD — the desktop motif is
+  a window still on the desk. The crop is a bottom mask fade
+  (`mask-image: linear-gradient`, black to 78% then transparent) so it
+  dissolves into the ground instead of slicing text mid-line. On phones the
+  full window fits, so it centers in the remaining ground with no mask.
+- Escape hatch: `@media (max-height: 600px)` restores normal scrolling
+  rather than clipping text on very short windows.
 
-## Motion (one authored system)
+## Motion (entrance only)
 
-- Load: hero children rise 14px + fade, 80ms stagger, 700ms expo-out; the
-  hero window settles from scale(.985). Scroll: each section reveals once,
-  rise + fade only, threshold ~.18. Everything visible by default when
-  `prefers-reduced-motion: reduce`. No blur filters on ambient layers.
-- Signature interaction: the how-it-works toggle demo. A real switch flips
-  skill `architect` between on and off and the settings.json snippet edits
-  itself (the `"architect": "off"` line appears; restoring removes the
-  entry, mirroring setOverride(nil) = restore default). Demonstrates the
-  sanctioned mechanism, invents nothing.
-- Hovers: buttons brighten, card borders lift. No wiggles.
+- Children rise 14px + fade, 80ms stagger, 700ms expo-out
+  (`cubic-bezier(.19,1,.22,1)`); the window settles from
+  translateY(18px) scale(.985). Runs once on load, JS-gated (`html.js`),
+  fully visible without JS and under `prefers-reduced-motion`.
+- Hovers: CTA lifts 1px and brightens its glow; text links brighten.
+  Nothing else moves. No scroll reveals; there is no scroll.
 
 ## Copy
 
-Unslop voice everywhere including `<title>`: plain, factual, no AI cadence,
-no em dashes, sentence case headings. No invented numbers, testimonials, or
-claims. The four real value strings (`on`, `name-only`,
-`user-invocable-only`, `off`) and real paths
-(`~/.claude/settings.json.loadout.bak`,
-`~/Library/Application Support/Loadout/shelf/<tool>/`) are the proof
-vocabulary.
+Unslop voice, plain and factual, sentence case, no em dashes, no invented
+claims. The whole page is five strings:
+
+- h1: "Manage your AI skills."
+- sub (value prop first, per user 2026-07-24 — do not lead with "free Mac
+  menu-bar app"): "Skills and system prompts for all your agents, one click
+  away. See what's active in Claude Code, Cursor, and OpenCode, switch
+  anything off, edit your prompts."
+- Buttons: "Download for Mac" (signed DMG release URL) · "Build from source"
+- Facts: "Free, MIT · Signed and notarized · macOS 14+"
 
 ## Assets
 
-- Real captures only, in `site/assets/`: library.png (hero), popover.png +
-  menubar.png (menu-bar section), bulk.png (trust visual), appicon.png.
-- Fonts self-hosted; zero third-party requests from the page itself.
+- One image: `assets/library.png` (real capture, retaken 2026-07-24 from
+  the current build with the architect skill focused; shows the SYSTEM
+  PROMPTS sidebar, the skills list with green state dots, and the
+  On/Name/Manual/Off segmented control — every capability the sub names is
+  visible in the shot). A focused row shows its checkbox ticked and
+  "1 of 43"; that is the app's designed Finder-style state, not noise.
+  appicon.png as favicon + brand mark. Fonts self-hosted; zero third-party
+  requests.
+- Unused-by-the-page captures (menubar.png, popover.png, bulk.png) stay in
+  `assets/` for OG cards or future use.
 
 ## App brand carryover
 
 - Icon: graphite tile, corner-bracket slot grid, one slot equipped in green
   (`design/brand/loadout-icon.svg` → `Sources/Loadout/Resources/AppIcon.png`).
 - Menu bar glyph: SF Symbol `backpack`.
-- The page's green is the app's own equipped-state green. Continuity is
-  deliberate: state color IS the brand. Terracotta stays inside the app.
+- Terracotta stays inside the app; the page chrome is neutral + off-white.

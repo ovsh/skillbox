@@ -20,26 +20,26 @@ Outcome: click Download (signed DMG v0.5.0,
 https://github.com/ovsh/skillbox/releases/download/v0.5.0/Loadout-MacOS.dmg)
 or build from source.
 
-Confirmed content spine (user-approved 2026-07-23, unchanged):
-1. What it is: every skill your AI tools have, one switch each.
-2. See it: REAL screenshots only (library window hero, menu bar + popover).
-3. How it works: three mechanisms as evidence rows: sanctioned
-   `skillOverrides` writes (live, folder never moves, values on / name-only /
-   user-invocable-only / off) · lossless per-tool shelving · global prompt
-   editor (CLAUDE.md / AGENTS.md).
-4. Trust: backs up settings.json once, owns exactly one key, delete goes to
-   Trash, MIT open source, networking disclosure (GitHub update check +
-   PostHog analytics, random install id, skill names never contents).
-5. Action: Download + build from source.
+Content (user-directed 2026-07-24, superseding the earlier five-section
+spine): ONE VIEWPORT, NO SCROLLING. The whole page is:
+1. Statement: manage your AI skills.
+2. One sentence: see what's active across Claude Code, Cursor, and OpenCode,
+   switch skills off, edit your global prompts.
+3. Download for Mac + build from source, mono fact line
+   (Free, MIT · Signed and notarized · macOS 14+).
+4. One REAL screenshot (the library window: system prompts sidebar, skills
+   with switches), cropped by the fold on desktop.
+Mechanism detail, trust claims, and the rename note live in the GitHub
+README, not on the page.
 
-Chosen direction (standing user preference, 2026-07-24, PRODUCT.md Brand
-Commitments): the conventional modern Mac-app landing page played straight at
-Raycast's craft bar; "Instrument" world recorded in DESIGN.md. Themed worlds
-(patch-notes, pixel-art) are permanently excluded for this surface.
-Memorable moment: the skillOverrides toggle demo that edits real JSON.
+Chosen direction (standing user preferences, 2026-07-24, PRODUCT.md Brand
+Commitments): the conventional modern Mac-app landing page played straight
+at Raycast's craft bar; "Instrument" world recorded in DESIGN.md. Themed
+worlds (patch-notes, pixel-art) and long-scroll multi-section layouts are
+both excluded for this surface ("too convoluted").
 
-Proof on hand: the real app (buildable, screenshottable), mechanism truth in
-PLAN.md/README.md, MIT license. No testimonials, user counts, or benchmarks
-exist; never invent. Unslop voice everywhere including <title>.
+Proof on hand: the real app (buildable, screenshottable), MIT license.
+No testimonials, user counts, or benchmarks exist; never invent. Unslop
+voice everywhere including <title>.
 
 Unresolved: none.

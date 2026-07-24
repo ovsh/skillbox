@@ -81,6 +81,12 @@ all day.
   ("doesn't feel like a normal landing page"). Do not pitch themed worlds
   for the landing page again; execute the category standard at full
   fidelity. PowerWatch's pixel-sky look also remains excluded.
+- STANDING LANDING-PAGE PREFERENCE, revised same day (user, 2026-07-24):
+  a long-scroll multi-section page was also rejected ("too convoluted").
+  The page is a SINGLE VIEWPORT with no scrolling: manage your AI skills /
+  see what's active and system prompts / disable skills conveniently, one
+  Download CTA, one real screenshot. Details live in the GitHub README,
+  not on the page.
 - Voice: plain, factual, quiet confidence. Safety posture stated concretely
   (backs up settings.json once, patches only the one key it owns, everything
   reversible), never marketed as vague "safe & secure".
