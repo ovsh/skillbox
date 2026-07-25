@@ -117,7 +117,10 @@ the benefit"):
   "too long and not specific"): "Switch agent skills and edit your system
   prompt in a tap."
 - sub: "Every skill from Claude Code, Cursor, and OpenCode in one window.
-  Flip one and running sessions pick it up live."
+  Flip one and Claude Code picks it up mid-session." (Live pickup is a
+  Claude Code `skillOverrides` fact only — Cursor/OpenCode use shelving —
+  so the claim must stay scoped to Claude Code; finish-reviewer caught
+  the overreach 2026-07-25.)
 - Buttons: "Download for Mac" (latest-release DMG URL) · "Build from source"
 - Facts: "Free, MIT · Signed and notarized · macOS 14+"
 - Plus one caption per simulation beat, present tense, one clause each.
