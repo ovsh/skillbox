@@ -65,50 +65,61 @@ real product UI as the only imagery.
 - Hero column, centered: h1 → sub → [Download for Mac + Build from source ↗]
   → mono fact line. All vertical gaps are vh-clamped so 1280×720 compresses
   instead of clipping.
-- The window: library.png (real capture) at min(1060px, 92vw), 12px radius,
-  1px `--line-strong` edge, 0 24px 80px rgba(0,0,0,.55) shadow, top-aligned
-  in the remaining flex space and CROPPED BY THE FOLD — the desktop motif is
-  a window still on the desk. The crop is a bottom mask fade
-  (`mask-image: linear-gradient`, black to 78% then transparent) so it
-  dissolves into the ground instead of slicing text mid-line. On phones the
-  full window fits, so it centers in the remaining ground with no mask.
-- Escape hatch: `@media (max-height: 600px)` restores normal scrolling
-  rather than clipping text on very short windows.
+- The window: an auto-playing SIMULATION of the app (2026-07-25, replacing
+  the static fold-cropped library.png). The `.stage` keeps the window's
+  2120:1300 aspect, fits the remaining flex space (16:10-clamped width),
+  12px radius, 1px `--line-strong` edge, 0 24px 80px rgba(0,0,0,.55) shadow.
+  Inside, a `.film` layer (two full-frame captures crossfading: library /
+  AGENTS.md editor, plus pixel-aligned overlay patches) is panned and zoomed
+  per beat: `transform-origin: 0 0`, translate+scale with edge clamping.
+  Below the stage: caption line + scrubber (range input) + play/pause.
+- Escape hatch: `@media (max-height: 620px), (max-width: 420px)` restores
+  normal scrolling rather than clipping text on very short windows; `main`
+  gets `justify-content: safe center` there.
 
-## Motion (entrance only)
+## Motion
 
-- Children rise 14px + fade, 80ms stagger, 700ms expo-out
-  (`cubic-bezier(.19,1,.22,1)`); the window settles from
-  translateY(18px) scale(.985). Runs once on load, JS-gated (`html.js`),
-  fully visible without JS and under `prefers-reduced-motion`.
+- The simulation: 9 beats, ~17s loop, driven by a rAF clock with a
+  fractional beat timeline. Every product pixel is a real screenshot crop
+  (`assets/sim/`); the only synthetic pixels are the hollow pointer ring
+  and the click ring. Beats: library → open prompts → type a line into
+  AGENTS.md → autosave chip → back to library → Name-only toggle → Off
+  toggle → dimmed row + count drop → back On. IntersectionObserver gates
+  playback; the scrubber seeks; `prefers-reduced-motion` and no-JS both
+  render the static first frame with all copy visible.
+- Entrance: children rise 14px + fade, 80ms stagger, 700ms expo-out
+  (`cubic-bezier(.19,1,.22,1)`); the stage settles from
+  translateY(18px) scale(.985) (released via `.sim.rv:not(.in)` — the
+  `:not` keeps the settled state from being outranked). Runs once on load,
+  JS-gated (`html.js`), fully visible without JS.
 - Hovers: CTA lifts 1px and brightens its glow; text links brighten.
-  Nothing else moves. No scroll reveals; there is no scroll.
 
 ## Copy
 
 Unslop voice, plain and factual, sentence case, no em dashes, no invented
-claims. The whole page is five strings:
+claims. Benefit-first per user 2026-07-25 ("we're not telling users whats
+the benefit"):
 
-- h1: "Manage your AI skills."
-- sub (value prop first, per user 2026-07-24 — do not lead with "free Mac
-  menu-bar app"): "Skills and system prompts for all your agents, one click
-  away. See what's active in Claude Code, Cursor, and OpenCode, switch
-  anything off, edit your prompts."
-- Buttons: "Download for Mac" (signed DMG release URL) · "Build from source"
+- h1: "Skills are hard to find and harder to switch off."
+- sub: "They sit in folders you have to remember, and every new model wants
+  a different setup. Loadout puts them all in one window with a switch on
+  each, and keeps CLAUDE.md and AGENTS.md a click away. That's all it does."
+- Buttons: "Download for Mac" (latest-release DMG URL) · "Build from source"
 - Facts: "Free, MIT · Signed and notarized · macOS 14+"
+- Plus one caption per simulation beat, present tense, one clause each.
 
 ## Assets
 
-- One image: `assets/library.png` (real capture, retaken 2026-07-24 from
-  the current build with the architect skill focused; shows the SYSTEM
-  PROMPTS sidebar, the skills list with green state dots, and the
-  On/Name/Manual/Off segmented control — every capability the sub names is
-  visible in the shot). A focused row shows its checkbox ticked and
-  "1 of 43"; that is the app's designed Finder-style state, not noise.
-  appicon.png as favicon + brand mark. Fonts self-hosted; zero third-party
-  requests.
-- Unused-by-the-page captures (menubar.png, popover.png, bulk.png) stay in
-  `assets/` for OG cards or future use.
+- `assets/sim/` — the simulation's captures, all from the real app
+  (2026-07-25 build): `sim-lib.webp` + `sim-prompt.webp` (full 2120×1300
+  frames), `ov-edit.webp`, `ov-name.webp`, `ov-off.webp`, `ov-off-row.webp`,
+  `ov-off-count.webp`, `ov-edit-chars.webp` (pixel-aligned overlay patches).
+  The AGENTS.md editor capture shows a generic section, NOT the user's
+  private CLAUDE.md (their model-cost table must never be published).
+- `assets/og.jpg` — social card. appicon.png as favicon + brand mark.
+  Fonts self-hosted; zero third-party requests.
+- The old static captures (library.png, menubar.png, popover.png, bulk.png)
+  were removed 2026-07-25; the simulation replaced them.
 
 ## App brand carryover
 
