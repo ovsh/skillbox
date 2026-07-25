@@ -67,15 +67,23 @@ real product UI as the only imagery.
   instead of clipping.
 - The window: an auto-playing SIMULATION of the app (2026-07-25, replacing
   the static fold-cropped library.png). The `.stage` keeps the window's
-  2120:1300 aspect, fits the remaining flex space (16:10-clamped width),
-  12px radius, 1px `--line-strong` edge, 0 24px 80px rgba(0,0,0,.55) shadow.
-  Inside, a `.film` layer (two full-frame captures crossfading: library /
-  AGENTS.md editor, plus pixel-aligned overlay patches) is panned and zoomed
-  per beat: `transform-origin: 0 0`, translate+scale with edge clamping.
-  Below the stage: caption line + scrubber (range input) + play/pause.
-- Escape hatch: `@media (max-height: 620px), (max-width: 420px)` restores
-  normal scrolling rather than clipping text on very short windows; `main`
-  gets `justify-content: safe center` there.
+  2120:1300 aspect, 12px radius, 1px `--line-strong` edge,
+  0 24px 80px rgba(0,0,0,.55) shadow. Inside, a `.film` layer (two
+  full-frame captures crossfading: library / AGENTS.md editor, plus
+  pixel-aligned overlay patches) is panned and zoomed per beat:
+  `transform-origin: 0 0`, translate+scale with edge clamping.
+- SCROLL TAKEOVER (2026-07-25, user-directed: "bigger and allow scrolling
+  ... the app becomes full page"): the page scrolls again. `.sim` is a
+  280vh runway; `.hold` (sticky, 100svh) carries stage + scrubber. JS maps
+  scroll progress through smoothstep to stage width — from
+  min(1120px, 92vw) at rest (window peeking under the hero) to
+  min(97.5vw, height-fit) — and eases `.hold`'s padding-top from 18px to
+  vertically centered. No-JS: no runway, static hold.
+- Captions are TOOLTIPS pinned to the pointer (`.tip`, mono 12px chip,
+  `width: max-content` so edge anchors don't collapse it), flipping away
+  from edges (`fx`/`fy` at >56%/>55%), position computed through the
+  beat's camera in stage space. Under the stage: play/pause + scrubber
+  only.
 
 ## Motion
 
@@ -100,10 +108,11 @@ Unslop voice, plain and factual, sentence case, no em dashes, no invented
 claims. Benefit-first per user 2026-07-25 ("we're not telling users whats
 the benefit"):
 
-- h1: "Skills are hard to find and harder to switch off."
-- sub: "They sit in folders you have to remember, and every new model wants
-  a different setup. Loadout puts them all in one window with a switch on
-  each, and keeps CLAUDE.md and AGENTS.md a click away. That's all it does."
+- h1 (user's own line, 2026-07-25, replacing the pain-first headline as
+  "too long and not specific"): "Switch agent skills and edit your system
+  prompt in a tap."
+- sub: "Every skill from Claude Code, Cursor, and OpenCode in one window.
+  Flip one and running sessions pick it up live."
 - Buttons: "Download for Mac" (latest-release DMG URL) · "Build from source"
 - Facts: "Free, MIT · Signed and notarized · macOS 14+"
 - Plus one caption per simulation beat, present tense, one clause each.
