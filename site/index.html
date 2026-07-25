@@ -1,0 +1,309 @@
+<!doctype html>
+<!--
+DIRECTION CONTRACT (canon standing preference, user-chosen 2026-07-24;
+recorded in PRODUCT.md Brand Commitments. Revised same day by user
+direction: the long-scroll page was "too convoluted". This surface is now
+a SINGLE VIEWPORT, no scrolling.)
+
+THESIS: One screen that says the whole product: manage your AI skills.
+See what's active, see your system prompts, switch skills off. The real
+library window is the entire argument; no sections, no mechanism panels,
+no feature grid. Everything a visitor needs sits above the fold because
+there is no below-the-fold.
+
+OWN-WORLD: Near-black instrument ground (#0A0B0D), Archivo at normal
+width, mono reserved for the fact line, one off-white glowing CTA. The
+green lives inside the screenshot (the app's own switches).
+
+STORY: A developer lands, reads one plain line, sees the real window with
+switches and prompt files, downloads. Ten seconds, no scroll.
+
+FIRST VIEWPORT: The only viewport. Slim bar (brand left, GitHub right);
+centered statement, one supporting sentence, Download for Mac +
+build-from-source, mono fact line; the real library window rising from
+the bottom edge, cropped by the fold like a window still on the desk.
+
+FORM: Category canon at full fidelity, compressed to one screen. Motion
+is the entrance only: children rise once, the window settles. Nothing
+else moves.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loadout: skill manager for Claude Code, Cursor, and OpenCode</title>
+<meta name="description" content="Manage your AI skills. A free Mac menu-bar app: see every skill Claude Code, Cursor, and OpenCode have installed, switch any of them off, and edit your global prompts. Open source, signed and notarized.">
+<link rel="icon" type="image/png" href="assets/appicon.png">
+<script>document.documentElement.classList.add("js");</script>
+<meta property="og:title" content="Loadout: skill manager for Claude Code, Cursor, and OpenCode">
+<meta property="og:description" content="Manage your AI skills. See what's active, switch skills off, edit your global prompts. Free Mac menu-bar app, open source, signed and notarized.">
+<meta property="og:image" content="https://ovsh.github.io/loadout/assets/library.png">
+<meta property="og:url" content="https://ovsh.github.io/loadout/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  @font-face {
+    font-family: "Archivo";
+    src: url("assets/fonts/archivo-var.woff2") format("woff2");
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    font-display: swap;
+  }
+  :root {
+    --bg: #0A0B0D;
+    --fg: #F2F3F5;
+    --mute: #9BA0A6;
+    --dim: #6C7076;
+    --line: rgba(255, 255, 255, .08);
+    --line-strong: rgba(255, 255, 255, .16);
+    --cta: #E9EAEC;
+    --cta-text: #17181B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { height: 100%; overflow: hidden; }
+  body {
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    position: relative;
+    isolation: isolate;
+    color: var(--fg);
+    font-family: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-stretch: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: rgba(233, 234, 236, .18); }
+
+  /* Ground atmosphere: green bloom under the window, spotlight over the
+     statement, a hairline grid that dissolves outward, film grain. All CSS,
+     all static, zero requests. */
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 72% 28% at 50% 50%, rgba(108, 171, 130, .26), transparent 58%),
+      radial-gradient(ellipse 120% 85% at 50% 118%, rgba(108, 171, 130, .14), transparent 68%),
+      radial-gradient(ellipse 70% 45% at 50% -14%, rgba(233, 234, 236, .07), transparent 62%),
+      var(--bg);
+  }
+  .bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a { color: inherit; text-decoration: none; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--cta);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Top bar */
+  .bar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px clamp(20px, 4vw, 44px);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15.5px;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+  }
+  .brand img { width: 26px; height: 26px; border-radius: 6px; display: block; }
+  .bar .gh {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 480;
+    color: var(--mute);
+    transition: color .18s ease;
+  }
+  .bar .gh:hover { color: var(--fg); }
+
+  /* Hero */
+  main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: clamp(16px, 4.5vh, 56px) 20px 0;
+  }
+  h1 {
+    font-size: clamp(40px, 6.2vw, 72px);
+    font-weight: 640;
+    letter-spacing: -0.03em;
+    line-height: 1.03;
+    text-wrap: balance;
+  }
+  .sub {
+    margin-top: clamp(14px, 2.2vh, 22px);
+    max-width: 68ch;
+    font-size: clamp(15.5px, 1.9vh, 17.5px);
+    line-height: 1.6;
+    font-weight: 420;
+    color: var(--mute);
+    text-wrap: balance;
+  }
+  .actions {
+    margin-top: clamp(18px, 3vh, 30px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-block;
+    background: var(--cta);
+    color: var(--cta-text);
+    font-size: 16px;
+    font-weight: 560;
+    letter-spacing: -0.01em;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow:
+      inset 0 -1px 0 rgba(0, 0, 0, .12),
+      0 0 0 1px rgba(255, 255, 255, .06),
+      0 1px 2px rgba(0, 0, 0, .5),
+      0 8px 28px rgba(233, 234, 236, .12);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 -1px 0 rgba(0, 0, 0, .12),
+      0 0 0 1px rgba(255, 255, 255, .1),
+      0 2px 4px rgba(0, 0, 0, .5),
+      0 10px 36px rgba(233, 234, 236, .18);
+  }
+  .ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 15.5px;
+    font-weight: 480;
+    color: var(--mute);
+    transition: color .18s ease;
+  }
+  .ghost:hover { color: var(--fg); }
+  .facts {
+    margin-top: clamp(14px, 2.4vh, 24px);
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    color: #8A9098;
+    letter-spacing: 0.01em;
+  }
+  .facts span + span::before { content: "·"; margin-right: 10px; }
+
+  /* The window, cropped by the fold */
+  .shot {
+    flex: 1;
+    min-height: 140px;
+    width: 100%;
+    margin-top: clamp(20px, 4.5vh, 52px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+    /* The fold crop fades into the ground instead of slicing text mid-line */
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 78%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 78%, transparent 100%);
+  }
+  .shot img {
+    width: min(1060px, 92vw);
+    height: auto;
+    display: block;
+    border-radius: 12px;
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+  }
+
+  /* Entrance (JS-gated; everything visible without JS or with reduced motion) */
+  html.js .rv {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .7s cubic-bezier(.19, 1, .22, 1), transform .7s cubic-bezier(.19, 1, .22, 1);
+  }
+  html.js .rv.d2 { transition-delay: .08s; }
+  html.js .rv.d3 { transition-delay: .16s; }
+  html.js .rv.d4 { transition-delay: .24s; }
+  html.js .rv.d5 { transition-delay: .32s; }
+  html.js .shot.rv { transform: translateY(18px) scale(.985); }
+  html.js .in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js .rv { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* Small screens */
+  @media (max-width: 560px) {
+    .bar { padding: 18px 20px; }
+    .actions { gap: 16px; }
+    .sub { max-width: 34ch; }
+    .facts { font-size: 11.5px; gap: 8px; }
+    .facts span + span::before { margin-right: 8px; }
+    /* The full window fits on a phone: center it, no fold crop to fade */
+    .shot { align-items: center; -webkit-mask-image: none; mask-image: none; }
+  }
+  /* Short windows: let it scroll rather than clip text */
+  @media (max-height: 600px) {
+    html { overflow: auto; }
+    body { height: auto; min-height: 100svh; overflow: auto; }
+    .shot { min-height: 200px; max-height: 320px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true"></div>
+
+<header class="bar">
+  <a class="brand" href="https://ovsh.github.io/loadout/"><img src="assets/appicon.png" alt="" width="26" height="26">Loadout</a>
+  <a class="gh" href="https://github.com/ovsh/skillbox" target="_blank" rel="noopener">GitHub
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3.5 1.5h7v7M10.5 1.5 1.5 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</header>
+
+<main>
+  <h1 class="rv">Manage your AI skills.</h1>
+  <p class="sub rv d2">Skills and system prompts for all your agents, one click away. See what's active in Claude Code, Cursor, and OpenCode, switch anything off, edit your prompts.</p>
+  <div class="actions rv d3">
+    <a class="btn" href="https://github.com/ovsh/skillbox/releases/download/v0.5.0/Loadout-MacOS.dmg">Download for Mac</a>
+    <a class="ghost" href="https://github.com/ovsh/skillbox#building-from-source" target="_blank" rel="noopener">Build from source
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3.5 1.5h7v7M10.5 1.5 1.5 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
+  <p class="facts rv d4"><span>Free, MIT</span><span>Signed and notarized</span><span>macOS 14+</span></p>
+  <div class="shot rv d5">
+    <img src="assets/library.png" alt="The Loadout library window: system prompts CLAUDE.md and AGENTS.md in the sidebar, 43 skills listed with green active dots, and the architect skill open with its On, Name, Manual, and Off controls." width="1290" height="790" fetchpriority="high">
+  </div>
+</main>
+
+<script>
+  addEventListener("load", function () {
+    setTimeout(function () {
+      document.querySelectorAll(".rv").forEach(function (el) { el.classList.add("in"); });
+    }, 60);
+  });
+</script>
+
+</body>
+</html>

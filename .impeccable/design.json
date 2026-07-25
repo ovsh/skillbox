@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-25T04:47:13Z",
+  "title": "Design System: Loadout",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#F2F0EC", "lightCanonical": "#1E1C19" },
+      "ink-secondary": { "role": "neutral", "displayName": "Ink Secondary", "canonical": "#A8A49C", "lightCanonical": "#635F58" },
+      "ink-tertiary": { "role": "neutral", "displayName": "Ink Tertiary", "canonical": "#8A857C", "lightCanonical": "#797469" },
+      "chassis": { "role": "neutral", "displayName": "Chassis", "canonical": "#151412", "lightCanonical": "#EAE8E3" },
+      "canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "#1C1B19", "lightCanonical": "#FBFAF8" },
+      "raised": { "role": "neutral", "displayName": "Raised Well", "canonical": "#252320", "lightCanonical": "#F1EFEA" },
+      "elevated": { "role": "neutral", "displayName": "Elevated", "canonical": "#2B2926", "lightCanonical": "#FFFFFF" },
+      "live": { "role": "primary", "displayName": "Live Green", "canonical": "#57B87A", "lightCanonical": "#26794A" },
+      "live-vivid": { "role": "primary", "displayName": "Live Vivid", "canonical": "#6ECB8F", "lightCanonical": "#2E9159" },
+      "on-live": { "role": "primary", "displayName": "On Live", "canonical": "#0D2114", "lightCanonical": "#FFFFFF" },
+      "partial": { "role": "secondary", "displayName": "Partial Amber", "canonical": "#E0A340", "lightCanonical": "#9A6511" },
+      "danger": { "role": "secondary", "displayName": "Danger", "canonical": "#E97F71", "lightCanonical": "#A33228" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "One per pane: skill name in detail header, filename in editor header." },
+      "heading": { "displayName": "Heading", "purpose": "Empty-state titles, Settings identity, popover title." },
+      "body": { "displayName": "Body", "purpose": "Descriptions and prose." },
+      "row-title": { "displayName": "Row Title", "purpose": "Skill row name." },
+      "row-detail": { "displayName": "Row Detail", "purpose": "Skill row subtitle." },
+      "meta": { "displayName": "Meta", "purpose": "Dates, counts, captions." },
+      "section-label": { "displayName": "Section Label", "purpose": "Uppercase group headers; weight carries it, not tracking." },
+      "control": { "displayName": "Control", "purpose": "Four-state control segment labels." },
+      "editor": { "displayName": "Editor", "purpose": "System-prompt TextEditor body, monospaced." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 2px 8px rgba(0,0,0,0.42) (dark) / rgba(0,0,0,0.13) (light)", "purpose": "The only shadow in the system, reserved for surfaces that actually float above canvas (Card)." }
+    ],
+    "motion": [
+      { "name": "spring", "value": "spring(response: 0.34, dampingFraction: 0.78)", "purpose": "The signature motion moment: the four-state control's capsule sliding between positions." },
+      { "name": "snap", "value": "spring(response: 0.26, dampingFraction: 0.9)", "purpose": "State commits: switches, rails, numeric count transitions." },
+      { "name": "fade", "value": "easeOut(duration: 0.13)", "purpose": "Hover and reveal; pane cross-fades." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Action Button — Affirm",
+      "kind": "button",
+      "refersTo": "button-affirm",
+      "description": "Filled, 38pt, full-width primary action (e.g. bulk-enable, install update). Exactly one per screen.",
+      "html": "<button class=\"ds-btn-affirm\"><span>Enable</span></button>",
+      "css": ".ds-btn-affirm { background: #57B87A; color: #0D2114; font: 600 13px -apple-system, sans-serif; height: 38px; padding: 0 16px; border: none; border-radius: 9px; transition: background 0.13s ease-out; } .ds-btn-affirm:hover { background: #6ECB8F; } .ds-btn-affirm:focus-visible { outline: 1.5px solid rgba(87,184,122,0.55); outline-offset: 2px; }"
+    },
+    {
+      "name": "Action Button — Neutral / Destructive",
+      "kind": "button",
+      "refersTo": "button-neutral",
+      "description": "Secondary and destructive bulk actions, same 38pt shape as Affirm, no fill hierarchy implied.",
+      "html": "<button class=\"ds-btn-neutral\">Cancel</button>",
+      "css": ".ds-btn-neutral { background: #252320; color: #F2F0EC; font: 600 13px -apple-system, sans-serif; height: 38px; padding: 0 16px; border: none; border-radius: 9px; transition: background 0.13s ease-out; } .ds-btn-neutral:hover { background: #2B2926; } .ds-btn-destructive { background: rgba(233,127,113,0.13); color: #E97F71; font: 600 13px -apple-system, sans-serif; height: 38px; padding: 0 16px; border: none; border-radius: 9px; } .ds-btn-destructive:hover { background: rgba(233,127,113,0.22); }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Text-first secondary action, no chrome at rest, hover wash only. Save, Reload File, Open Logs.",
+      "html": "<button class=\"ds-btn-quiet\">Save</button>",
+      "css": ".ds-btn-quiet { background: transparent; color: #A8A49C; font: 500 11.5px -apple-system, sans-serif; padding: 5px 9px; border: none; border-radius: 6px; transition: background 0.13s ease-out, color 0.13s ease-out; } .ds-btn-quiet:hover { background: rgba(255,255,255,0.05); color: #F2F0EC; } .ds-btn-quiet:focus-visible { outline: 1.5px solid rgba(87,184,122,0.55); }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "A well sunk into canvas, not a raised chip. 30pt tall, 7px radius, focus ring only, no resting border.",
+      "html": "<div class=\"ds-search\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg><input placeholder=\"Search skills\"/></div>",
+      "css": ".ds-search { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; background: #252320; border-radius: 7px; color: #8A857C; } .ds-search:focus-within { box-shadow: 0 0 0 1.5px rgba(87,184,122,0.55); color: #57B87A; } .ds-search input { background: none; border: none; outline: none; color: #F2F0EC; font: 400 13.5px -apple-system, sans-serif; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The one floating surface with a real offset shadow. Used for the state card and Settings' two cards.",
+      "html": "<div class=\"ds-card\"><span>Launch at login</span></div>",
+      "css": ".ds-card { background: #2B2926; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.42); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Small metadata token: tool names, link status, frontmatter facts. Informational only, never interactive.",
+      "html": "<span class=\"ds-chip\">Managed</span>",
+      "css": ".ds-chip { display: inline-block; font: 500 11px -apple-system, sans-serif; color: #57B87A; background: rgba(87,184,122,0.13); padding: 3px 8px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Toggle",
+      "kind": "custom",
+      "refersTo": "toggle",
+      "description": "System switch style, small control size, tinted live green. Every binary state in the app.",
+      "html": "<label class=\"ds-toggle\"><input type=\"checkbox\" checked/><span class=\"ds-track\"><span class=\"ds-thumb\"></span></span></label>",
+      "css": ".ds-toggle input { display: none; } .ds-track { display: inline-block; width: 28px; height: 16px; background: #57B87A; border-radius: 9999px; position: relative; transition: background 0.13s ease-out; } .ds-thumb { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; background: white; border-radius: 50%; }"
+    },
+    {
+      "name": "Selection Checkbox",
+      "kind": "custom",
+      "refersTo": "checkbox",
+      "description": "15pt square with a 30x40 hit target. Live-green fill + checkmark when on, minus glyph when mixed, hollow when off. Fades in on row hover.",
+      "html": "<button class=\"ds-checkbox\" aria-checked=\"true\"><svg width=\"9\" height=\"9\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#0D2114\" stroke-width=\"4\"><polyline points=\"20 6 9 17 4 12\"/></svg></button>",
+      "css": ".ds-checkbox { width: 15px; height: 15px; background: #57B87A; border-radius: 4px; border: none; display: flex; align-items: center; justify-content: center; padding: 30px 7.5px; box-sizing: content-box; } .ds-checkbox[aria-checked=\"false\"] { background: transparent; border: 1.2px solid #8A857C; }"
+    },
+    {
+      "name": "Four-State Control",
+      "kind": "custom",
+      "refersTo": "state-control",
+      "description": "Signature component: On/Name/Manual/Off segmented control. Selected segment's capsule springs between positions and lands tinted in its state's color; label stays ink so legibility never depends on the fill.",
+      "html": "<div class=\"ds-state-control\"><button class=\"ds-seg ds-seg-on\">On</button><button class=\"ds-seg\">Name</button><button class=\"ds-seg\">Manual</button><button class=\"ds-seg\">Off</button></div>",
+      "css": ".ds-state-control { display: inline-flex; gap: 2px; padding: 2px; background: #252320; border-radius: 9px; } .ds-seg { height: 24px; padding: 0 11px; border: none; background: none; color: #8A857C; font: 500 12px -apple-system, sans-serif; border-radius: 7px; transition: background 0.34s cubic-bezier(0.34,1.56,0.64,1); } .ds-seg-on { background: rgba(87,184,122,0.22); color: #57B87A; }"
+    },
+    {
+      "name": "State Rail",
+      "kind": "custom",
+      "refersTo": "state-rail",
+      "description": "3pt leading-edge capsule on every skill row; height/opacity/color redundantly encode On/Partial/Off/Unavailable so state survives grayscale.",
+      "html": "<span class=\"ds-rail\"></span>",
+      "css": ".ds-rail { display: inline-block; width: 3px; height: 40px; background: #57B87A; border-radius: 9999px; } .ds-rail.partial { height: 18px; opacity: 0.85; background: #E0A340; } .ds-rail.off { height: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument, Not the Dashboard",
+    "overview": "Loadout is a warm-graphite Mac instrument in the Things/Fantastical school: real vibrancy, generous whitespace, system SF at true optical sizes, tactile controls, motion that is felt more than seen. It explicitly refuses the near-black-plus-hairline-grid look every AI utility ships — panes are told apart by tone and material, almost never by a drawn line. Dark is the primary, designed-in appearance (a quiet window that sits next to a terminal all day); light ships and is correct but is not where decisions get made.\n\nColor carries meaning, not decoration. Green (live) is the app's one identity hue and is rationed to state: rails, switches, selection tint, the focus ring, the active tally dot. Amber (partial) means \"not settled yet\" and appears in exactly four places. Every colored state also carries its own word, so the app's state reads correctly in a grayscale screenshot.\n\nThe four surfaces — Library window, System Prompt editor, menu-bar popover, Settings window — share one token set and one set of primitives (Card, ActionButton, StateControl, LoadoutToggle, SelectionCheckbox). The Library and Prompt Editor windows hide their title bar and reserve a 40pt band for traffic-light air; the Settings window and menu popover are secondary surfaces and use the system title bar / floating chrome instead.",
+    "keyCharacteristics": [
+      "Warm graphite dark, four flat tones apart by luminance and material, not by rule",
+      "One rationed identity green; every colored state also has a word",
+      "System SF at real sizes, tabular digits on every count and date",
+      "A single authored spring (the four-state control); everything else is a 130ms fade",
+      "Reading columns capped (680/860pt) so wide windows never produce a wall of text"
+    ],
+    "rules": [
+      { "name": "The One Green Rule", "body": "live is the identity hue and appears only at: rails, switches, selection tint, the focus ring, and the active tally dot (plus the affirmative button, its one filled-surface use). It is never used for decoration or emphasis outside a state signal.", "section": "colors" },
+      { "name": "The Four Ambers Rule", "body": "partial has exactly four sanctioned uses (documented in Theme.swift): the name-only/manual-only state, the \"Manual-only\" frontmatter chip, unsaved prompt-editor edits, and the disk-conflict notice. Do not reach for amber as a generic \"warning\" color outside those four.", "section": "colors" },
+      { "name": "The Grayscale Survival Rule", "body": "No state is encoded in color alone. The state rail also changes position/height; the row also prints the state's word when it isn't plainly on or off; the checkbox shows a checkmark or minus glyph, not just a fill.", "section": "colors" },
+      { "name": "The Real Optical Size Rule", "body": "Type is set at the sizes SF actually reads best at on the Mac (13.5 for body, not a web-derived 14 or 16); nothing is scaled up to fill space.", "section": "typography" },
+      { "name": "The One Display Per Pane Rule", "body": "display (26pt) never appears twice in the same pane — it marks the single thing the pane is about.", "section": "typography" },
+      { "name": "The Tabular Digits Rule", "body": "Every count and date is .monospacedDigit() with .contentTransition(.numericText()), so numbers roll instead of jump and never reflow their neighbors.", "section": "typography" },
+      { "name": "The One Seam Rule", "body": "Exactly one hairline separator exists in the whole app: the list-detail boundary in the Library window. Every other boundary separates by tone, material, or air.", "section": "elevation" },
+      { "name": "The Sibling Controls Rule", "body": "Interactive row controls (checkbox, switch, select button) are laid out as siblings, never nested inside one another's tap target, so a checkbox click can never also dispatch row selection.", "section": "elevation" },
+      { "name": "The Flat-Unless-Floating Rule", "body": "Nothing gets a shadow just because it's a container. Only surfaces meant to read as physically above the canvas (cards, not panes) take the Card shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do ration live green to state signals only: rails, switches, selection, focus ring, active-count dot, and the one affirmative button fill.",
+      "Do tell panes apart with tone, material, and air first; reach for a hairline separator only where two panes share a tone and genuinely need a seam (today: exactly one place, list-detail).",
+      "Do cap prose and code columns (680pt reading, 860pt editor) even in a maximized window.",
+      "Do give every colored state its own word, not just its color, so state survives a grayscale screenshot.",
+      "Do lay row-level interactive controls out as siblings, never nested inside a larger tap target.",
+      "Do use real vibrancy (NSVisualEffectView) for the sidebar, not a translucent color pretending to be material."
+    ],
+    "donts": [
+      "Don't use partial amber as a generic \"warning\" or \"attention\" color — its four uses are enumerated and closed.",
+      "Don't add a shadow to a container just because it's a container; shadows are reserved for things that are actually meant to float above the canvas (Cards).",
+      "Don't introduce a second spring-based motion moment; Theme.spring is reserved for the four-state control specifically so it stays a signature rather than a house style.",
+      "Don't draw a border/hairline as a default separator between sibling elements — it is the documented exception, not the grammar, in a system whose thesis explicitly refuses the \"near-black-plus-hairline-grid\" look common to AI utilities."
+    ]
+  }
+}

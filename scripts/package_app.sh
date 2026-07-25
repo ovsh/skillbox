@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="Skillbox.app"
-EXECUTABLE_NAME="Skillbox"
-BUNDLE_ID="${BUNDLE_ID:-com.ovsh.skillbox}"
+APP_NAME="Loadout.app"
+EXECUTABLE_NAME="Loadout"
+BUNDLE_ID="${BUNDLE_ID:-com.ovsh.loadout}"
 CONFIGURATION="${CONFIGURATION:-release}"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME"
@@ -36,15 +36,15 @@ chmod +x "$MACOS_DIR/$EXECUTABLE_NAME"
 
 # Copy SPM resource bundle so Bundle.module works at runtime
 BIN_DIR="$(dirname "$BIN_PATH")"
-SPM_BUNDLE="$BIN_DIR/Skillbox_Skillbox.bundle"
+SPM_BUNDLE="$BIN_DIR/Loadout_Loadout.bundle"
 if [[ -d "$SPM_BUNDLE" ]]; then
   cp -R "$SPM_BUNDLE" "$RESOURCES_DIR/"
   echo "Copied SPM resource bundle to app"
 fi
 
 # Also copy AppIcon.png directly so Bundle.main can find it
-if [[ -f "$ROOT_DIR/Sources/Skillbox/Resources/AppIcon.png" ]]; then
-  cp "$ROOT_DIR/Sources/Skillbox/Resources/AppIcon.png" "$RESOURCES_DIR/AppIcon.png"
+if [[ -f "$ROOT_DIR/Sources/Loadout/Resources/AppIcon.png" ]]; then
+  cp "$ROOT_DIR/Sources/Loadout/Resources/AppIcon.png" "$RESOURCES_DIR/AppIcon.png"
 fi
 
 # Generate app icon
@@ -64,7 +64,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>Skillbox</string>
+  <string>Loadout</string>
   <key>CFBundleExecutable</key>
   <string>$EXECUTABLE_NAME</string>
   <key>CFBundleIconFile</key>
@@ -74,7 +74,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>Skillbox</string>
+  <string>Loadout</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -104,7 +104,7 @@ echo "Bundle created: $APP_BUNDLE (signed with: $CODESIGN_IDENTITY)"
 # Notarize (skip for ad-hoc builds or if SKIP_NOTARIZE is set)
 if [[ "$CODESIGN_IDENTITY" != "-" && "${SKIP_NOTARIZE:-}" != "1" ]]; then
   echo "Creating ZIP for notarization..."
-  NOTARIZE_ZIP="$(mktemp -d)/Skillbox-notarize.zip"
+  NOTARIZE_ZIP="$(mktemp -d)/Loadout-notarize.zip"
   ditto -c -k --sequesterRsrc --keepParent "$APP_BUNDLE" "$NOTARIZE_ZIP"
 
   echo "Submitting to Apple notary service..."
@@ -117,7 +117,7 @@ if [[ "$CODESIGN_IDENTITY" != "-" && "${SKIP_NOTARIZE:-}" != "1" ]]; then
       --wait
   else
     # Keychain profile auth (local)
-    NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-Skillbox}"
+    NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-digital-lane}"
     xcrun notarytool submit "$NOTARIZE_ZIP" \
       --keychain-profile "$NOTARIZE_PROFILE" \
       --wait

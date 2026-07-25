@@ -33,7 +33,7 @@ jobs:
           fi
 
       - name: Build release binary
-        run: swift build -c release --product Skillbox
+        run: swift build -c release --product Loadout
 
       - name: Import signing certificate
         env:
@@ -71,8 +71,8 @@ jobs:
       - name: Create ZIP (always)
         run: |
           cd dist
-          ditto -c -k --sequesterRsrc --keepParent "Skillbox.app" \
-            "Skillbox-MacOS.zip"
+          ditto -c -k --sequesterRsrc --keepParent "Loadout.app" \
+            "Loadout-MacOS.zip"
 
       - name: Create DMG with drag-to-Applications layout (retry)
         id: create_dmg
@@ -97,7 +97,7 @@ jobs:
         env:
           CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
         if: steps.create_dmg.outputs.created == 'true' && env.CODESIGN_IDENTITY != '' && env.CODESIGN_IDENTITY != '-'
-        run: codesign --force --sign "$CODESIGN_IDENTITY" dist/Skillbox-MacOS.dmg
+        run: codesign --force --sign "$CODESIGN_IDENTITY" dist/Loadout-MacOS.dmg
 
       - name: Notarize DMG
         env:
@@ -107,13 +107,13 @@ jobs:
         if: steps.create_dmg.outputs.created == 'true' && env.NOTARIZE_KEY_P8_BASE64 != ''
         run: |
           KEY_PATH="$RUNNER_TEMP/notarize_key.p8"
-          xcrun notarytool submit dist/Skillbox-MacOS.dmg \
+          xcrun notarytool submit dist/Loadout-MacOS.dmg \
             --key "$KEY_PATH" \
             --key-id "$NOTARIZE_KEY_ID" \
             --issuer "$NOTARIZE_ISSUER_ID" \
             --wait
 
-          xcrun stapler staple dist/Skillbox-MacOS.dmg || {
+          xcrun stapler staple dist/Loadout-MacOS.dmg || {
             echo "Warning: stapling failed. The DMG is still notarized — Gatekeeper checks online."
           }
 
@@ -140,13 +140,13 @@ jobs:
           ## Install
 
           **Option A — DMG (recommended)**
-          1. Download **Skillbox-MacOS.dmg**
-          2. Open the DMG and drag **Skillbox** to Applications
+          1. Download **Loadout-MacOS.dmg**
+          2. Open the DMG and drag **Loadout** to Applications
           3. Launch from Applications or Spotlight
 
           **Option B — ZIP**
-          1. Download **Skillbox-MacOS.zip**
-          2. Unzip and move **Skillbox.app** to `/Applications`
+          1. Download **Loadout-MacOS.zip**
+          2. Unzip and move **Loadout.app** to `/Applications`
           3. Launch from Applications or Spotlight
 
           Then click the menu bar icon → **Settings** to configure.
@@ -167,8 +167,8 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           FILES=()
 
-          [[ -f dist/Skillbox-MacOS.zip ]] && FILES+=("dist/Skillbox-MacOS.zip")
-          [[ -f dist/Skillbox-MacOS.dmg ]] && FILES+=("dist/Skillbox-MacOS.dmg")
+          [[ -f dist/Loadout-MacOS.zip ]] && FILES+=("dist/Loadout-MacOS.zip")
+          [[ -f dist/Loadout-MacOS.dmg ]] && FILES+=("dist/Loadout-MacOS.dmg")
 
           if [[ "${#FILES[@]}" -eq 0 ]]; then
             echo "No release artifacts found in dist/." >&2

@@ -1,0 +1,50 @@
+<svg width="2048" height="2048" viewBox="0 0 2048 2048" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Loadout — app icon. Source of truth; the PNG in Sources/Loadout/Resources
+    is rendered from this file, and the .icns is generated from that PNG at
+    package time, by the app's own generate-icon flag.
+
+    The mark is the app's own list grammar: a state rail carries the leading
+    edge, the row body follows. Two rows live, one off — a set, most of it on.
+    Green stays rationed here exactly as it is in the UI, and the tile is the
+    same warm graphite as the chassis rather than the cool blue-black every
+    other developer utility ships.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A2723"/>
+      <stop offset="0.5" stop-color="#191714"/>
+      <stop offset="1" stop-color="#0E0D0B"/>
+    </linearGradient>
+    <linearGradient id="live" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6ECB8F"/>
+      <stop offset="1" stop-color="#47A167"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="34"/>
+    </filter>
+  </defs>
+
+  <rect x="200" y="200" width="1648" height="1648" rx="368" fill="url(#tile)"/>
+  <rect x="203" y="203" width="1642" height="1642" rx="365" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="6"/>
+
+  <!-- Row height 224, gap 144, block 816, top 616.
+       Rail 548..656, body 720..1500. Rails are 108 wide so they survive the
+       menu bar at 32px; at 72 they disappeared. -->
+
+  <g filter="url(#glow)" opacity="0.55">
+    <rect x="548" y="616" width="108" height="224" rx="54" fill="#58A56E"/>
+    <rect x="548" y="984" width="108" height="224" rx="54" fill="#58A56E"/>
+  </g>
+
+  <rect x="548" y="616" width="108" height="224" rx="54" fill="url(#live)"/>
+  <rect x="720" y="616" width="780" height="224" rx="76" fill="#FFFFFF" fill-opacity="0.17"/>
+
+  <rect x="548" y="984" width="108" height="224" rx="54" fill="url(#live)"/>
+  <rect x="720" y="984" width="780" height="224" rx="76" fill="#FFFFFF" fill-opacity="0.17"/>
+
+  <!-- Off: the rail goes out and the row dims with it, same as the list. -->
+  <rect x="548" y="1352" width="108" height="224" rx="54" fill="#FFFFFF" fill-opacity="0.24"/>
+  <rect x="720" y="1352" width="780" height="224" rx="76" fill="#FFFFFF" fill-opacity="0.07"/>
+</svg>

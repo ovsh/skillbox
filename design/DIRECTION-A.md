@@ -1,3 +1,8 @@
+> **SUPERSEDED — 2026-07-25.** The "Graphite" system described here was
+> replaced by the redesign recorded in `DESIGN.md` at the repo root. This
+> file is kept as history and anti-reference. Names below (`Skillbox`,
+> `SkillboxKit`) predate the Loadout rename. Do not implement from it.
+
 # Skillbox — Direction A "Graphite" Implementation Plan
 
 The approved design direction (see `design/directions.html`, tab A, for the living
