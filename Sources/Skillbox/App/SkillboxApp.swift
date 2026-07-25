@@ -80,7 +80,7 @@ struct SkillboxApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window("Skillbox", id: "library") {
+        Window("Loadout", id: "library") {
             LibraryWindow()
                 .environment(library)
                 .environment(prompts)
@@ -92,7 +92,7 @@ struct SkillboxApp: App {
         .defaultSize(width: 980, height: 640)
         .windowStyle(.hiddenTitleBar)
 
-        Window("Skillbox Settings", id: "settings") {
+        Window("Loadout Settings", id: "settings") {
             SettingsWindow()
                 .environment(services)
         }

@@ -14,77 +14,52 @@ struct BulkActionsPane: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("\(skills.count) skills selected")
-                .font(Theme.title())
-                .foregroundStyle(Theme.ink)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("\(skills.count) skills")
+                    .font(Theme.display)
+                    .foregroundStyle(Theme.ink)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(Theme.snap, value: skills.count)
+                Spacer(minLength: 8)
+                Button("Clear", action: clearSelection)
+                    .buttonStyle(QuietButtonStyle())
+            }
 
             Text(summary)
-                .font(Theme.secondary)
+                .font(Theme.body)
                 .foregroundStyle(Theme.inkSecondary)
+                .padding(.top, 6)
 
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(skills.prefix(8)) { skill in
-                    HStack(spacing: 7) {
-                        StatusDot(isOn: library.isClaudeAvailable(skill) && library.isActiveForClaude(skill))
-                        Text(skill.name)
-                            .font(Theme.body)
-                            .foregroundStyle(Theme.inkSecondary)
-                            .lineLimit(1)
-                    }
-                }
-                if skills.count > 8 {
-                    Text("and \(skills.count - 8) more…")
-                        .font(Theme.meta)
-                        .foregroundStyle(Theme.inkTertiary)
-                        .padding(.leading, 14)
-                }
-            }
+            selectionList
+                .padding(.top, 20)
 
-            HStack(spacing: 10) {
-                BigActionButton(
-                    title: "Turn On",
-                    systemImage: "power",
-                    style: .affirm,
-                    isEnabled: !toggleable.isEmpty
-                ) {
-                    library.setActiveBulk(toggleable, true)
-                }
-                BigActionButton(
-                    title: "Turn Off",
-                    systemImage: "moon",
-                    style: .neutral,
-                    isEnabled: !toggleable.isEmpty
-                ) {
-                    library.setActiveBulk(toggleable, false)
-                }
-                BigActionButton(
-                    title: "Delete…",
-                    systemImage: "trash",
-                    style: .destructive
-                ) {
-                    confirmingDelete = true
-                }
-            }
-            .frame(maxWidth: 460)
-            .padding(.top, 6)
+            actions
+                .padding(.top, 24)
 
             Text("Turn Off hides skills from Claude — files stay on disk. Delete moves folders to the Trash (links are removed link-only).")
                 .font(Theme.meta)
                 .foregroundStyle(Theme.inkTertiary)
+                .lineSpacing(2.5)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: 460, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 12)
 
             if let error = library.lastError {
                 Text(error)
-                    .font(Theme.secondary)
+                    .font(Theme.body)
                     .foregroundStyle(Theme.danger)
+                    .padding(.top, 12)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(EdgeInsets(top: 24, leading: 28, bottom: 24, trailing: 28))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+        .padding(.horizontal, Theme.paneInset)
+        .padding(.top, Theme.titleBar)
+        .padding(.bottom, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.canvas)
         .confirmationDialog(
             "Delete \(skills.count) skills?",
@@ -99,6 +74,70 @@ struct BulkActionsPane: View {
         } message: {
             Text(deleteMessage)
         }
+    }
+
+    /// The same state language as the list: a colored rail segment, the name,
+    /// and the state's own word — so a bulk action is never taken blind.
+    private var selectionList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(skills.prefix(9)) { skill in
+                let available = library.isClaudeAvailable(skill)
+                let style = StateStyle.of(skill.claudeOverride ?? .on)
+                HStack(spacing: 10) {
+                    Capsule()
+                        .fill(available ? style.color : Theme.separator)
+                        .frame(width: 3, height: style.isLive ? 16 : 8)
+                        .frame(height: 16)
+                    Text(skill.name)
+                        .font(Theme.body)
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Spacer(minLength: 12)
+                    Text(available ? style.label : "not in Claude")
+                        .font(Theme.meta)
+                        .foregroundStyle(available ? style.color : Theme.inkTertiary)
+                }
+                .opacity(available && style.isLive ? 1 : 0.65)
+                .frame(height: 26)
+            }
+            if skills.count > 9 {
+                Text("and \(skills.count - 9) more")
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .padding(.leading, 13)
+                    .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var actions: some View {
+        HStack(spacing: 10) {
+            ActionButton(
+                title: "Turn On",
+                systemImage: "checkmark",
+                style: .affirm,
+                isEnabled: !toggleable.isEmpty
+            ) {
+                library.setActiveBulk(toggleable, true)
+            }
+            ActionButton(
+                title: "Turn Off",
+                systemImage: "minus",
+                style: .neutral,
+                isEnabled: !toggleable.isEmpty
+            ) {
+                library.setActiveBulk(toggleable, false)
+            }
+            ActionButton(
+                title: "Delete…",
+                systemImage: "trash",
+                style: .destructive
+            ) {
+                confirmingDelete = true
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var summary: String {

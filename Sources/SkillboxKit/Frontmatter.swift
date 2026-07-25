@@ -78,13 +78,42 @@ public enum Frontmatter {
                 value = value.hasPrefix(">")
                     ? blockLines.joined(separator: " ")
                     : blockLines.joined(separator: "\n")
-            } else if (value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2) ||
-                      (value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2) {
+            } else if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
+                // YAML double-quoted scalars carry backslash escapes; a
+                // description full of quoted trigger phrases is the common case.
+                value = unescapeDoubleQuoted(String(value.dropFirst().dropLast()))
+            } else if value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2 {
+                // Single-quoted YAML has one escape: '' means a literal quote.
                 value = String(value.dropFirst().dropLast())
+                    .replacingOccurrences(of: "''", with: "'")
             }
             result[key] = value
         }
         return result
+    }
+
+    /// The escapes that show up in real frontmatter. Anything else keeps its
+    /// backslash rather than being guessed at.
+    private static func unescapeDoubleQuoted(_ value: String) -> String {
+        guard value.contains("\\") else { return value }
+        var out = ""
+        out.reserveCapacity(value.count)
+        var iterator = value.makeIterator()
+        while let character = iterator.next() {
+            guard character == "\\", let escaped = iterator.next() else {
+                out.append(character)
+                continue
+            }
+            switch escaped {
+            case "\"": out.append("\"")
+            case "\\": out.append("\\")
+            case "n": out.append("\n")
+            case "t": out.append("\t")
+            case "/": out.append("/")
+            default: out.append(character); out.append(escaped)
+            }
+        }
+        return out
     }
 }
 

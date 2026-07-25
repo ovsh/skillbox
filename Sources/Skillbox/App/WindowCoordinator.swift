@@ -13,8 +13,8 @@ final class WindowCoordinator {
 
         var title: String {
             switch self {
-            case .library: "Skillbox"
-            case .settings: "Skillbox Settings"
+            case .library: "Loadout"
+            case .settings: "Loadout Settings"
             }
         }
     }

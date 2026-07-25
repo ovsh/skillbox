@@ -18,20 +18,23 @@ struct PromptEditor: View {
                         conflictBanner
                     }
 
+                    // A well sunk into the canvas — no border, just a tone step
+                    // and the shadow the text sits inside.
                     TextEditor(text: $prompts.text)
                         .font(Theme.editor)
                         .foregroundStyle(Theme.ink)
-                        .lineSpacing(4)
+                        .lineSpacing(5)
                         .scrollContentBackground(.hidden)
-                        .padding(14)
+                        .padding(16)
                         .background(Theme.raised, in: .rect(cornerRadius: Theme.radius))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.radius)
-                                .strokeBorder(Theme.border, lineWidth: 0.5)
-                        )
-                        .padding(EdgeInsets(top: 0, leading: Theme.gutter + 8, bottom: Theme.gutter, trailing: Theme.gutter + 8))
+                        .padding(.horizontal, Theme.paneInset)
+                        .padding(.bottom, Theme.paneInset)
                         .disabled(prompts.readFailed)
                 }
+                // A column, not a wall. Header and well share the same measure
+                // so the pane reads as one document however wide the window is.
+                .frame(maxWidth: Theme.editorWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 EmptyState(
                     systemImage: "text.alignleft",
@@ -47,61 +50,85 @@ struct PromptEditor: View {
     }
 
     private func editorHeader(_ file: PromptFile) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(file.displayShortName)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(Theme.display)
                     .foregroundStyle(Theme.ink)
-                HStack(spacing: 6) {
-                    Text(abbreviatedPath(file))
-                        .font(Theme.mono)
-                        .foregroundStyle(Theme.inkTertiary)
-                    Text("·")
-                        .foregroundStyle(Theme.inkTertiary)
-                    Text(file.readerDescription)
-                        .font(Theme.meta)
-                        .foregroundStyle(Theme.inkTertiary)
-                }
+                Spacer(minLength: 8)
+                Text("\(prompts.text.count) chars")
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                // Autosave already runs; the button is for people who want to
+                // commit now. It only exists when there is something to commit,
+                // so the header never carries a dead gray pill.
+                Button("Save") { prompts.save() }
+                    .buttonStyle(QuietButtonStyle())
+                    .keyboardShortcut("s", modifiers: .command)
+                    .disabled(!prompts.isDirty || !prompts.canSave)
+                    .opacity(prompts.isDirty && prompts.canSave ? 1 : 0)
             }
 
-            Spacer()
+            HStack(spacing: 8) {
+                Text(abbreviatedPath(file))
+                    .font(Theme.mono)
+                    .foregroundStyle(Theme.inkTertiary)
+                Text("·")
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
+                Text(file.readerDescription)
+                    .font(Theme.meta)
+                    .foregroundStyle(Theme.inkTertiary)
+                Spacer(minLength: 12)
+                saveStatusLabel
+            }
+        }
+        .padding(.horizontal, Theme.paneInset)
+        .padding(.top, Theme.titleBar)
+        .padding(.bottom, 16)
+    }
 
-            Text("\(prompts.text.count) chars")
-                .font(Theme.meta)
-                .foregroundStyle(Theme.inkTertiary)
-                .monospacedDigit()
-
+    /// Autosave status. A dot in the state palette carries it — amber while
+    /// there's unsaved work, green once disk matches the buffer.
+    private var saveStatusLabel: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(statusTint)
+                .frame(width: 6, height: 6)
             Text(saveStatus)
                 .font(Theme.meta)
-                .foregroundStyle(prompts.isDirty ? Theme.accent : Theme.inkTertiary)
-                .animation(Theme.fade, value: prompts.isDirty)
-
-            Button("Save") { prompts.save() }
-                .keyboardShortcut("s", modifiers: .command)
-                .controlSize(.small)
-                .disabled(!prompts.isDirty || !prompts.canSave)
+                .foregroundStyle(statusTint == Theme.danger ? Theme.danger : Theme.inkSecondary)
+                .lineLimit(1)
         }
-        .padding(EdgeInsets(top: 22, leading: Theme.gutter + 8, bottom: 14, trailing: Theme.gutter + 8))
+        .animation(Theme.fade, value: prompts.isDirty)
+    }
+
+    private var statusTint: Color {
+        if prompts.lastError != nil || prompts.hasDiskConflict { return Theme.danger }
+        return prompts.isDirty ? Theme.partial : Theme.live
     }
 
     private var conflictBanner: some View {
         HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.accent)
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.partial)
             Text("This file changed on disk while you were editing.")
-                .font(Theme.secondary)
+                .font(Theme.body)
                 .foregroundStyle(Theme.ink)
-            Spacer()
+            Spacer(minLength: 12)
             Button("Reload File") { prompts.reloadFromDisk() }
-                .controlSize(.small)
+                .buttonStyle(QuietButtonStyle())
             Button("Keep Mine") { prompts.overwriteDisk() }
-                .controlSize(.small)
+                .buttonStyle(QuietButtonStyle())
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Theme.accent.opacity(0.09), in: .rect(cornerRadius: Theme.radiusSmall))
-        .padding(EdgeInsets(top: 0, leading: Theme.gutter + 8, bottom: 10, trailing: Theme.gutter + 8))
+        .padding(.vertical, 9)
+        .background(Theme.partial.opacity(0.13), in: .rect(cornerRadius: Theme.radiusSmall))
+        .padding(.horizontal, Theme.paneInset)
+        .padding(.bottom, 12)
     }
 
     private var saveStatus: String {

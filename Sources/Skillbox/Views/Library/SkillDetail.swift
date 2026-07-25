@@ -2,7 +2,9 @@ import MarkdownUI
 import SkillboxKit
 import SwiftUI
 
-/// Right pane: one skill — slim header controls, provenance, rendered SKILL.md.
+/// Right pane: one skill. Title, the four-state control with the sentence that
+/// explains what that state actually does, provenance, then the skill's own
+/// SKILL.md rendered in full.
 struct SkillDetail: View {
     @Environment(SkillLibraryModel.self) private var library
     let skill: InstalledSkill
@@ -12,68 +14,55 @@ struct SkillDetail: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                caption
-                    .padding(.top, 10)
+
                 if !skill.description.isEmpty {
                     Text(skill.description)
                         .font(Theme.body)
                         .foregroundStyle(Theme.inkSecondary)
-                        .lineSpacing(3)
+                        .lineSpacing(3.5)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 12)
+                        .padding(.top, 10)
                 }
+
+                stateCard
+                    .padding(.top, 22)
+
                 metaLine
-                    .padding(.top, 12)
-                otherTools
-                document
                     .padding(.top, 20)
+
+                otherTools
+
+                document
+                    .padding(.top, 30)
             }
-            .padding(EdgeInsets(top: 24, leading: 28, bottom: 40, trailing: 28))
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // A reading column, not a wall. The pane can be 1200pt wide; the
+            // document inside it never is.
+            .frame(maxWidth: Theme.readingWidth, alignment: .leading)
+            .padding(.horizontal, Theme.paneInset)
+            .padding(.top, Theme.titleBar)
+            .padding(.bottom, 48)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .background(Theme.canvas)
     }
 
-    // MARK: Header — title · slim state pill · ghost actions
-    // ViewThatFits: one line when there's room; title row + controls row when
-    // narrow, so the pill never wraps mid-word.
+    // MARK: Header
 
     private var header: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) {
-                titleText
-                Spacer(minLength: 12)
-                statePill
-                ghostActions
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    titleText
-                    Spacer(minLength: 12)
-                    ghostActions
-                }
-                statePill
-            }
-        }
-    }
-
-    private var titleText: some View {
-        Text(skill.name)
-            .font(Theme.title())
-            .foregroundStyle(Theme.ink)
-            .lineLimit(1)
-    }
-
-    @ViewBuilder
-    private var statePill: some View {
-        if library.isClaudeAvailable(skill) {
-            SlimStatePill(skill: skill)
-                .disabled(!library.canToggleClaude(skill))
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(skill.name)
+                .font(Theme.display)
+                .foregroundStyle(Theme.ink)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            ghostActions
+                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 7 }
         }
     }
 
     private var ghostActions: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             GhostIconButton(systemImage: "folder", help: "Reveal in Finder") {
                 revealInFinder()
             }
@@ -108,10 +97,38 @@ struct SkillDetail: View {
         }
     }
 
-    private var caption: some View {
-        Text(captionText)
-            .font(Theme.meta)
-            .foregroundStyle(library.overridesUnreadable ? Theme.accent : Theme.inkTertiary)
+    // MARK: State
+    //
+    // The one card in the window. State is the thing this app exists to change,
+    // so it gets a surface of its own — control on top, the plain sentence for
+    // the current state underneath, never more than two lines.
+
+    private var stateCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    SectionLabel(text: "In Claude Code")
+                    Spacer(minLength: 12)
+                    if library.isClaudeAvailable(skill) {
+                        StateControl(
+                            state: skill.claudeOverride ?? .on,
+                            isEnabled: library.canToggleClaude(skill)
+                        ) { newState in
+                            library.setClaudeOverride(skill, newState == .on ? nil : newState)
+                        }
+                    } else {
+                        Chip(text: "Not installed", tint: Theme.inkSecondary)
+                    }
+                }
+                Text(captionText)
+                    .font(Theme.meta)
+                    .foregroundStyle(library.overridesUnreadable ? Theme.danger : Theme.inkSecondary)
+                    .lineSpacing(2.5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var captionText: String {
@@ -122,24 +139,27 @@ struct SkillDetail: View {
             return "~/.claude/settings.json can't be parsed — fix it (or restore the .skillbox.bak) to re-enable switching."
         }
         switch skill.claudeOverride ?? .on {
-        case .on: return "On — Claude can invoke this skill, and /\(skill.dirName) runs it directly. Off hides it from Claude; files stay on disk."
-        case .nameOnly: return "Name only — Claude sees the name but won't auto-invoke. /\(skill.dirName) still works."
-        case .userInvocableOnly: return "Manual only — hidden from Claude; you can still run /\(skill.dirName) yourself."
-        case .off: return "Off — hidden from Claude, the / menu, and Agent SDK apps. Files stay on disk; Delete removes them."
+        case .on: return "Claude can invoke this skill on its own, and /\(skill.dirName) runs it directly."
+        case .nameOnly: return "Claude sees the name but won't auto-invoke it. /\(skill.dirName) still works."
+        case .userInvocableOnly: return "Hidden from Claude — you can still run /\(skill.dirName) yourself."
+        case .off: return "Hidden from Claude, the / menu, and Agent SDK apps. Files stay on disk; Delete removes them."
         }
     }
 
-    // Meta facts: one line when they fit, two stacked groups when narrow.
-    // Every item is fixedSize so nothing ever wraps inside itself.
+    // MARK: Meta
+    //
+    // One line when the facts fit, two stacked groups when narrow. Every item
+    // is fixedSize so nothing ever wraps inside itself.
+
     private var metaLine: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 14) { datesGroup; provenanceGroup }
-            VStack(alignment: .leading, spacing: 6) { datesGroup; provenanceGroup }
+            HStack(spacing: 18) { datesGroup; provenanceGroup }
+            VStack(alignment: .leading, spacing: 8) { datesGroup; provenanceGroup }
         }
     }
 
     private var datesGroup: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 18) {
             metaItem("Added", RelativeDateText.string(for: skill.addedAt))
             metaItem("Updated", RelativeDateText.string(for: skill.touchedAt))
         }
@@ -147,13 +167,14 @@ struct SkillDetail: View {
     }
 
     private var provenanceGroup: some View {
-        HStack(spacing: 14) {
-            metaItem("In", skill.presences.map { library.toolDisplayName($0.targetID) }.joined(separator: " · "))
+        HStack(spacing: 10) {
+            metaItem("In", skill.presences.map { library.toolDisplayName($0.targetID) }
+                .joined(separator: " · "))
             if skill.isManagedByRegistry {
-                Chip(text: "Managed", tint: Theme.accent).fixedSize()
+                Chip(text: "Managed", tint: Theme.live).fixedSize()
             }
             if skill.frontmatterFields["disable-model-invocation"] == "true" {
-                Chip(text: "Manual-only", tint: Theme.inkSecondary).fixedSize()
+                Chip(text: "Manual-only", tint: Theme.partial).fixedSize()
             }
             if let error = library.lastError {
                 Text(error)
@@ -166,12 +187,12 @@ struct SkillDetail: View {
     }
 
     private func metaItem(_ label: String, _ value: String) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Text(label)
                 .font(Theme.meta)
                 .foregroundStyle(Theme.inkTertiary)
             Text(value)
-                .font(Theme.meta)
+                .font(Theme.metaMedium)
                 .foregroundStyle(Theme.inkSecondary)
         }
     }
@@ -183,9 +204,7 @@ struct SkillDetail: View {
         let otherPresences = skill.presences.filter { $0.targetID != "claude" }
         let groupHasSymlink = skill.presences.contains { $0.isSymlink }
         if !otherPresences.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Rectangle().fill(Theme.border).frame(height: 0.5)
-                    .padding(.vertical, 8)
+            VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Other Tools")
                 ForEach(otherPresences, id: \.self) { presence in
                     HStack(spacing: 8) {
@@ -197,20 +216,23 @@ struct SkillDetail: View {
                         } else if presence.isSymlink {
                             Chip(text: "Symlinked", tint: Theme.inkSecondary)
                         }
-                        Spacer()
-                        AccentToggle(isOn: !presence.isShelved) { enabled in
+                        Spacer(minLength: 12)
+                        LoadoutToggle(isOn: !presence.isShelved) { enabled in
                             library.setToolPresence(skill, targetID: presence.targetID, enabled: enabled)
                         }
                         .disabled(groupHasSymlink || presence.isBroken)
                     }
+                    .frame(height: 26)
                 }
                 Text(groupHasSymlink
                      ? "This skill is linked between tools — moving any copy would break those links, so shelving is disabled."
-                     : "Off moves this folder to Skillbox's shelf and this tool stops reading this copy. Other copies are unaffected.")
+                     : "Off moves this folder to Loadout's shelf and this tool stops reading this copy. Other copies are unaffected.")
                     .font(Theme.meta)
                     .foregroundStyle(Theme.inkTertiary)
+                    .lineSpacing(2.5)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 14)
+            .padding(.top, 28)
         }
     }
 
@@ -218,16 +240,24 @@ struct SkillDetail: View {
 
     @ViewBuilder
     private var document: some View {
-        if let presence = primaryPresence {
-            VStack(alignment: .leading, spacing: 0) {
-                Rectangle().fill(Theme.border).frame(height: 0.5)
-                SkillDocument(directoryPath: presence.path, revision: skill.touchedAt, dropTitle: skill.name)
-                    .padding(.top, 18)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                SectionLabel(text: "SKILL.md")
+                Rectangle()
+                    .fill(Theme.separator)
+                    .frame(height: 1)
             }
-        } else {
-            Text("No readable SKILL.md.")
-                .font(Theme.secondary)
-                .foregroundStyle(Theme.inkTertiary)
+            if let presence = primaryPresence {
+                SkillDocument(
+                    directoryPath: presence.path,
+                    revision: skill.touchedAt,
+                    dropTitle: skill.name
+                )
+            } else {
+                Text("No readable SKILL.md.")
+                    .font(Theme.body)
+                    .foregroundStyle(Theme.inkTertiary)
+            }
         }
     }
 
@@ -238,53 +268,6 @@ struct SkillDetail: View {
     private func revealInFinder() {
         guard let presence = primaryPresence else { return }
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: presence.path)])
-    }
-}
-
-// MARK: - Slim state pill
-
-/// The header activation control: On / Name / Manual / Off in one hairline
-/// pill. Selected segment fills neutral; a selected Off fills terracotta.
-private struct SlimStatePill: View {
-    @Environment(SkillLibraryModel.self) private var library
-    let skill: InstalledSkill
-
-    private static let states: [(SkillOverrideState, String)] = [
-        (.on, "On"), (.nameOnly, "Name"), (.userInvocableOnly, "Manual"), (.off, "Off"),
-    ]
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Self.states, id: \.0) { state, label in
-                let isCurrent = (skill.claudeOverride ?? .on) == state
-                Button {
-                    library.setClaudeOverride(skill, state == .on ? nil : state)
-                } label: {
-                    Text(label)
-                        .font(Theme.segment)
-                        .fixedSize()
-                        .foregroundStyle(isCurrent ? (state == .off ? .white : Theme.ink) : Theme.inkTertiary)
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 5)
-                        .background(
-                            isCurrent ? (state == .off ? Theme.accent : Theme.segmentFill) : .clear
-                        )
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                if state != .off {
-                    Rectangle().fill(Theme.border).frame(width: 0.5, height: 16)
-                }
-            }
-        }
-        .background(Theme.raised.opacity(0.5))
-        .clipShape(.rect(cornerRadius: 7))
-        .overlay(
-            RoundedRectangle(cornerRadius: 7)
-                .strokeBorder(Theme.border, lineWidth: 0.5)
-        )
-        .animation(Theme.fade, value: skill.claudeOverride)
-        .accessibilityLabel("Claude state")
     }
 }
 
@@ -312,15 +295,16 @@ private struct SkillDocument: View {
                 if content.utf8.count > Self.renderLimit {
                     Text(content)
                         .font(Theme.mono)
+                        .foregroundStyle(Theme.inkSecondary)
                         .textSelection(.enabled)
                 } else {
                     Markdown(MarkdownContent(prepared(content)))
-                        .markdownTheme(.skillbox)
+                        .markdownTheme(.loadout)
                         .textSelection(.enabled)
                 }
             } else {
                 Text("No SKILL.md in this skill.")
-                    .font(Theme.secondary)
+                    .font(Theme.body)
                     .foregroundStyle(Theme.inkTertiary)
             }
         }
@@ -360,18 +344,40 @@ private struct SkillDocument: View {
 // MARK: - Markdown theme
 
 extension MarkdownUI.Theme {
-    /// DocC-derived theme recolored to the Skillbox palette. MainActor because
+    /// DocC-derived theme recolored to Loadout's palette. MainActor because
     /// MarkdownUI.Theme is not Sendable; it's only ever touched from views.
-    @MainActor static let skillbox = MarkdownUI.Theme.docC
+    @MainActor static let loadout = MarkdownUI.Theme.docC
         .text {
             ForegroundColor(Skillbox.Theme.ink)
-            FontSize(13)
+            FontSize(13.5)
         }
         .code {
             FontFamilyVariant(.monospaced)
             FontSize(11.5)
+            ForegroundColor(Skillbox.Theme.inkSecondary)
         }
         .link {
-            ForegroundColor(Skillbox.Theme.accent)
+            ForegroundColor(Skillbox.Theme.live)
         }
+        // DocC's headings are sized for a full documentation page and come out
+        // bigger than the pane title. Nothing inside the document is allowed to
+        // outrank the skill's own name.
+        .heading1 { heading($0, size: 19, top: 30) }
+        .heading2 { heading($0, size: 16, top: 26) }
+        .heading3 { heading($0, size: 14, top: 22) }
+        .heading4 { heading($0, size: 13, top: 18) }
+
+    @MainActor private static func heading(
+        _ configuration: BlockConfiguration,
+        size: CGFloat,
+        top: CGFloat
+    ) -> some View {
+        configuration.label
+            .markdownMargin(top: top, bottom: 8)
+            .markdownTextStyle {
+                FontSize(size)
+                FontWeight(.semibold)
+                ForegroundColor(Skillbox.Theme.ink)
+            }
+    }
 }
