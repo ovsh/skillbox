@@ -92,14 +92,20 @@ real product UI as the only imagery.
 
 ## Motion
 
-- The simulation: 9 beats, ~17s loop, driven by a rAF clock with a
-  fractional beat timeline. Every product pixel is a real screenshot crop
-  (`assets/sim/`); the only synthetic pixels are the hollow pointer ring
-  and the click ring. Beats: library → open prompts → type a line into
-  AGENTS.md → autosave chip → back to library → Name-only toggle → Off
-  toggle → dimmed row + count drop → back On. IntersectionObserver gates
-  playback; the scrubber seeks; `prefers-reduced-motion` and no-JS both
-  render the static first frame with all copy visible.
+- The simulation: 6 beats in three acts, ~18s loop, driven by a rAF
+  clock with a fractional beat timeline (simplified from 9 beats
+  2026-07-25: user asked for "slightly slower and simpler" with an
+  explicit storyline). Every product pixel is a real screenshot crop
+  (`assets/sim/`); the only synthetic pixels are the hollow pointer
+  ring, the click ring, and the tooltip. Acts: (1) library → flip `how`
+  Off (row dims, count drops) → back On; (2) batch view — search
+  "principle", 21 selected, Turn On / Turn Off / Delete… (the one real
+  batch capture, 2580×1582, zoomed 1.216x so its type matches the other
+  frames); (3) AGENTS.md open → type a line, autosave chip. Cameras stay
+  at z=1 except the batch (1.216) and typing (1.35) beats.
+  IntersectionObserver gates playback; the scrubber seeks;
+  `prefers-reduced-motion` and no-JS both render the static first frame
+  with all copy visible.
 - Entrance: children rise 14px + fade, 80ms stagger, 700ms expo-out
   (`cubic-bezier(.19,1,.22,1)`); the stage settles from
   translateY(18px) scale(.985) (released via `.sim.rv:not(.in)` — the
@@ -127,10 +133,12 @@ the benefit"):
 
 ## Assets
 
-- `assets/sim/` — the simulation's captures, all from the real app
-  (2026-07-25 build): `sim-lib.webp` + `sim-prompt.webp` (full 2120×1300
-  frames), `ov-edit.webp`, `ov-name.webp`, `ov-off.webp`, `ov-off-row.webp`,
-  `ov-off-count.webp`, `ov-edit-chars.webp` (pixel-aligned overlay patches).
+- `assets/sim/` — the simulation's captures, all from the real app:
+  `sim-lib.webp` + `sim-prompt.webp` (full 2120×1300 frames),
+  `sim-bulk.webp` (2580×1582 batch view, recovered from the pre-sim
+  bulk.png capture), `ov-edit.webp`, `ov-off.webp`, `ov-off-row.webp`,
+  `ov-off-count.webp`, `ov-edit-chars.webp` (pixel-aligned overlay
+  patches; `ov-name.webp` was retired with the Name-only beat).
   The AGENTS.md editor capture shows a generic section, NOT the user's
   private CLAUDE.md (their model-cost table must never be published).
 - `assets/og.jpg` — social card. appicon.png as favicon + brand mark.
