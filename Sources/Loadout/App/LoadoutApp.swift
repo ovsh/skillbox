@@ -55,7 +55,7 @@ private struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: "backpack")
+        Image(nsImage: MenuBarIcon.image)
             .onAppear {
                 WindowCoordinator.shared.register(openWindow: openWindow)
             }
