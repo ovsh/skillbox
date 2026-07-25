@@ -44,6 +44,11 @@ real product UI as the only imagery.
   tried and cut (stock generated-UI signature, flagged by the design hook;
   glows-not-grids is also Raycast's own grammar).
 - Radius: buttons 10px, window frame 12px. Borders 1px always.
+- Tooltip chip (the simulation's captions): ground rgba(10,11,13,.93) on a
+  `--line-strong` border, text #C9CDD2 mono 12px, radius 8px — one step
+  tighter than buttons because it lives inside the product window.
+- Stage underlay #0d0e10 (the app's own canvas tone, shows before the
+  first capture paints).
 
 ## Type
 
