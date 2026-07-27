@@ -129,7 +129,12 @@ the benefit"):
   the overreach 2026-07-25.)
 - Buttons: "Download for Mac" (latest-release DMG URL) · "Build from source"
 - Facts: "Free, MIT · Signed and notarized · macOS 14+"
-- Plus one caption per simulation beat, present tense, one clause each.
+- Plus one caption per simulation beat. Rules, tightened 2026-07-26 after
+  the captions drifted to two clauses and 74 words total: start with a
+  verb, no commas, under 10 words, and say only what the frame cannot
+  show. Narrating the visible animation ("the row dims, the count drops")
+  is the failure mode. A comma in a caption almost always means the verb
+  went missing and the comma is gluing two noun phrases together.
 
 ## Assets
 
